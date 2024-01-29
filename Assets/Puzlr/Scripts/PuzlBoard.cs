@@ -1,7 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Random = UnityEngine.Random;
+
 public class PuzlBoard
 {
     
@@ -31,12 +34,17 @@ public class PuzlBoard
     public static event OnBoardUpdated boardUpdate;
     public static event OnTileSwap swappedTiles;
     public static event OnFoundMatches foundMatches;
+
+    public delegate void OnBoardOverflow(EventArgs e);
+
+    public static event OnBoardOverflow boardOverflow;
     
     public PuzlBoard(int rows, int columns)
     {
         boardRows = rows;
         boardColumns = columns;
         InitBoard(rows, columns);
+        foundMatches += SetFallingTilesFromMatch;
     }
     
     void InitBoard(int rows, int cols)
@@ -90,8 +98,8 @@ public class PuzlBoard
         if (matches.Count > 0)
         {
             Debug.Log("Found matches: " + matches);
-            foundMatches?.Invoke(matches);
             boardUpdate?.Invoke(matches);
+            foundMatches?.Invoke(matches);
         }
 
         return true;
@@ -104,6 +112,7 @@ public class PuzlBoard
     private List<(int, int)> ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
         List<(int, int)> allMatches = new();
         allMatches = allMatches.Concat(MatchesHorizontal(coordinate1))
+                                .Concat(MatchesHorizontal(coordinate2))
                                 .Concat(MatchesVertical(coordinate1))
                                 .Concat(MatchesVertical(coordinate2)).ToList();
         if (allMatches.Count > 0) {
@@ -138,7 +147,6 @@ public class PuzlBoard
                 break;
             }
         }
-        Debug.Log(matches.Count);
         if(matches.Count <= 2)
             matches.Clear();
         return matches;
@@ -175,4 +183,42 @@ public class PuzlBoard
         return matches;
     }
     #endregion
+    
+    #region Falling_Tiles
+
+    void SetFallingTilesFromMatch(List<(int, int)> matchedTiles)
+    {
+        foreach ((int x, int y) matchedTile in matchedTiles) {
+            if (matchedTile.x + 1 >= boardRows) return;
+            Tile tileAbove = board[(matchedTile.x + 1, matchedTile.y)];
+            if (tileAbove.tileValue > 0) {
+                tileAbove.moving = true;
+                board[matchedTile].resolving = true;
+            }
+        }
+    }
+    #endregion
+    
+    #region Tile Spawning
+
+    void PlaceTile(int value, (int x, int y) coordinate, bool fromTopOfBoard = false)
+    {
+        if(coordinate.x >= boardRows || coordinate.y >= boardColumns)
+            Debug.LogError("Coordinate to place exceeds board size.");
+        if (fromTopOfBoard) {
+            if (board[coordinate].tileValue > 0) {
+                boardOverflow?.Invoke(EventArgs.Empty);
+                return;
+            }
+        }
+        
+        Tile modifiedTile = board[coordinate];
+        modifiedTile.tileValue = value;
+        modifiedTile.resolving = true;
+        if (board[(coordinate.x - 1, coordinate.y)].tileValue == 0)
+            modifiedTile.moving = true;
+    }
+    
+    #endregion
+    
 }

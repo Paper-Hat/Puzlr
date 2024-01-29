@@ -11,7 +11,6 @@ public class TileDisplay : MonoBehaviour
     [SerializeField] private Image tileImage;
     private (int x, int y) tilePos; //cols, rows
     [SerializeField] private Rect worldRect;
-    private bool selected = false;
     void Awake()
     {
         Controls.OnDragged += SwapTile;
@@ -57,9 +56,9 @@ public class TileDisplay : MonoBehaviour
                 (rectPos.y - GameManager.TileSize));
         }
         
-        //did we hit this tile, and is it functional?
+        //did we hit this tile, is it a swappable tile type, or is it resolving?
         if (!worldRect.Contains(new Vector2(dragVal.Item2.Item1, dragVal.Item2.Item2), true)
-            || GameManager.Board[tilePos].tileValue <= 0)
+            || GameManager.Board[tilePos].tileValue <= 0 || GameManager.Board[tilePos].resolving)
         {
             return;
         }
@@ -71,11 +70,12 @@ public class TileDisplay : MonoBehaviour
             switch (dir) {
                 case Controls.Direction.Left:
                     if (tilePos.y - 1 < 0) return;
+                    //tile on the left is always first in the swap
                     GameManager.Board.SwapTiles((tilePos.x, tilePos.y - 1), (tilePos.x, tilePos.y));
                     break;
                 case Controls.Direction.Right:
                     if (tilePos.y >= GameManager.Board.boardColumns) return;
-                    GameManager.Board.SwapTiles((tilePos.x, tilePos.y + 1), (tilePos.x, tilePos.y));
+                    GameManager.Board.SwapTiles((tilePos.x, tilePos.y), (tilePos.x, tilePos.y + 1));
                     break;
                 default:
                     Debug.LogError("Should not have reached an up-down result with only horizontal swapping enabled.");
