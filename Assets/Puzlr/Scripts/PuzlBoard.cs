@@ -28,11 +28,11 @@ public class PuzlBoard
     public int boardRows, boardColumns;
     private bool CanMatchVertical = false;
     private Dictionary<(int, int), Tile> board;
-    public delegate void OnTileSwap((int, int) a, (int, int) b);
+    public delegate void OnTileSwap(List<(int, int)> tilesSwapped);
     public delegate void OnFoundMatches(List<(int, int)> matchingCoords);
     public delegate void OnBoardUpdated(List<(int, int)> tilePos);
     public static event OnBoardUpdated boardUpdate;
-    public static event OnTileSwap swappedTiles;
+    public static event OnTileSwap tilesSwapped;
     public static event OnFoundMatches foundMatches;
 
     public delegate void OnBoardOverflow(EventArgs e);
@@ -44,7 +44,8 @@ public class PuzlBoard
         boardRows = rows;
         boardColumns = columns;
         InitBoard(rows, columns);
-        foundMatches += SetFallingTilesFromMatch;
+        foundMatches += SetFallingTiles;
+        tilesSwapped += SetFallingTiles;
     }
     
     void InitBoard(int rows, int cols)
@@ -79,20 +80,22 @@ public class PuzlBoard
     public bool SwapTiles((int, int) a, (int, int) b)
     {
         if(board[a].moving || board[b].moving){
+            Debug.Log("Swap failed due to moving tile(s)");
             return false;
         }
         if(board[a].tileValue == 0 && board[b].tileValue == 0){
+            Debug.Log("Attempted to swap two blank tiles.");
             return false;
         }
         if(board[a].tileValue == -1 || board[b].tileValue == -1){
+            Debug.Log("Attempted to swap with a special tile");
             return false;
         }
-        Debug.Log("Succeeded in swapping.");
+        //Debug.Log("Succeeded in swapping.");
         //Swap tiles via deconstruction
         (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
-
-        swappedTiles?.Invoke(a, b);
-        boardUpdate?.Invoke(new List<(int, int)> { a, b });
+        List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
+        boardUpdate?.Invoke(swappedTiles);
         List<(int, int)> matches = ResolveMatches(a, b);
         //update board if matches are found
         if (matches.Count > 0)
@@ -101,7 +104,7 @@ public class PuzlBoard
             boardUpdate?.Invoke(matches);
             foundMatches?.Invoke(matches);
         }
-
+        tilesSwapped?.Invoke(swappedTiles);
         return true;
 
     }
@@ -127,10 +130,13 @@ public class PuzlBoard
     //checks horizontal matches to the right given a coordinate
     private List<(int, int)> MatchesHorizontal((int x, int y) coord){
         List<(int, int)> matches = new List<(int, int)> {coord};
+        Tile checkingTile = board[coord];
+        //empty tile should not be checked against
+        if (checkingTile.tileValue == 0) return matches;
         //iterate right, stopping if we find a tile that doesn't match
         for(int i = coord.y + 1; i < boardColumns; i++){
             Tile toCheckAgainst = board[(coord.x, i)];
-            if(board[coord].tileValue != 0 && board[coord].tileValue == toCheckAgainst.tileValue){
+            if(checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving){
                 matches.Add((coord.x, i));
             }
             else{
@@ -140,7 +146,7 @@ public class PuzlBoard
         //iterate left, stopping if we find a tile that doesn't match
         for(int i = coord.y - 1; i >= 0; i--){
             Tile toCheckAgainst = board[(coord.x, i)];
-            if(board[coord].tileValue == toCheckAgainst.tileValue){
+            if(checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving){
                 matches.Add((coord.x, i));
             }
             else{
@@ -156,11 +162,14 @@ public class PuzlBoard
     private List<(int, int)> MatchesVertical((int x, int y) coord)
     {
         List<(int, int)> matches = new List<(int, int)>{coord};
+        Tile checkingTile = board[coord];
+        //empty tile should not be checked against
+        if (checkingTile.tileValue == 0) return matches;
         //check downward
         for (int i = coord.x - 1; i >= 0; i--) {
-            Tile toCheckAgainst = board[(coord.y, i)];
-            if (board[coord].tileValue == toCheckAgainst.tileValue) {
-                matches.Add((coord.y, i));
+            Tile toCheckAgainst = board[(i, coord.y)];
+            if (checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving) {
+                matches.Add((i, coord.y));
             }
             else {
                 break;
@@ -168,10 +177,10 @@ public class PuzlBoard
         }
 
         //check upwards
-        for (int i = coord.x + 1; i < boardRows; i++) {
-            Tile toCheckAgainst = board[(coord.y, i)];
-            if (board[coord].tileValue == toCheckAgainst.tileValue) {
-                matches.Add((coord.y, i));
+        for (int i = coord.x + 1; i < boardColumns; i++) {
+            Tile toCheckAgainst = board[(i, coord.y)];
+            if (checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving) {
+                matches.Add((i, coord.y));
             }
             else
             {
@@ -186,14 +195,40 @@ public class PuzlBoard
     
     #region Falling_Tiles
 
-    void SetFallingTilesFromMatch(List<(int, int)> matchedTiles)
+    //falling tiles occur for three reasons
+    //1: newly spawned tiles at the top of the board
+    //2: Tiles are matched, causing tiles above them to fall
+    //3: Tiles are swapped over an empty space
+    void SetFallingTiles(List<(int, int)> tiles)
     {
-        foreach ((int x, int y) matchedTile in matchedTiles) {
-            if (matchedTile.x + 1 >= boardRows) return;
-            Tile tileAbove = board[(matchedTile.x + 1, matchedTile.y)];
-            if (tileAbove.tileValue > 0) {
-                tileAbove.moving = true;
-                board[matchedTile].resolving = true;
+        foreach ((int x, int y) tile in tiles) {
+            Tile thisTile = board[tile];
+            
+            //if we submitted an empty tile, make any existing tiles above it fall
+            if (thisTile.tileValue == 0) {
+                if (tile.x + 1 >= boardRows) continue;
+                Tile tileAbove = board[(tile.x + 1, tile.y)];
+                board[tile].resolving = tileAbove.tileValue > 0;
+                for (int i = tile.x + 1; i < boardColumns; i++) {
+                    var iterTile = board[(i, tile.y)];
+                    if (iterTile.tileValue == -1)
+                        break;
+                    if (iterTile.tileValue > 0) {
+                        tileAbove.moving = true;
+                    }
+                }
+                
+            }
+            //if it's a non-zero tile, check to see if it needs to fall
+            else
+            {
+                if (tile.x - 1 < 0) continue;
+                Tile tileBelow = board[(tile.x - 1, tile.y)];
+                if (tileBelow.tileValue == 0) {
+                    tileBelow.resolving = true;
+                    thisTile.moving = true;
+                }
+                
             }
         }
     }

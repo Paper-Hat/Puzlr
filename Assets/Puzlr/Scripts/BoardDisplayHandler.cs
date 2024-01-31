@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -58,11 +59,12 @@ public class BoardDisplayHandler : MonoBehaviour
         foreach (var pos in tilePos) {
             Tile gameTile = board[(pos)];
             TileDisplay td = boardDisplay[(pos)];
+            //td.ConfigureWorldRect(td.transform.position);
             if (gameTile.tileValue == 0) {
                 td.ConfigureImage(true);
                 continue;
             }
-            td.ConfigureImage(false, GameManager._instance.tileSprites[gameTile.tileValue - 1]);
+            td.ConfigureImage(false, GameManager._instance.tileSprites[gameTile.tileValue]);
         }
     }
 }
