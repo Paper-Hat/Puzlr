@@ -59,7 +59,6 @@ public class BoardDisplayHandler : MonoBehaviour
         foreach (var pos in tilePos) {
             Tile gameTile = board[(pos)];
             TileDisplay td = boardDisplay[(pos)];
-            //td.ConfigureWorldRect(td.transform.position);
             if (gameTile.tileValue == 0) {
                 td.ConfigureImage(true);
                 continue;

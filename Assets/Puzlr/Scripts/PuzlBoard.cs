@@ -77,36 +77,62 @@ public class PuzlBoard
     //  cannot swap moving tiles
     //  cannot swap two empty tiles
     //  cannot swap with unmovable tiles
-    public bool SwapTiles((int, int) a, (int, int) b)
+    public bool SwapTiles((int, int) a, (int, int) b, bool force = false)
     {
-        if(board[a].moving || board[b].moving){
-            Debug.Log("Swap failed due to moving tile(s)");
-            return false;
+        if(!force){
+            if(board[a].moving || board[b].moving){
+                Debug.Log("Swap failed due to moving tile(s)");
+                return false;
+            }
+            if(board[a].tileValue == 0 && board[b].tileValue == 0){
+                Debug.Log("Attempted to swap two blank tiles.");
+                return false;
+            }
+            if(board[a].tileValue == -1 || board[b].tileValue == -1){
+                Debug.Log("Attempted to swap with a special tile");
+                return false;
+            }
+            //Debug.Log("Succeeded in swapping.");
+            //Swap tiles via deconstruction
+            (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
+            List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
+            boardUpdate?.Invoke(swappedTiles);
+            List<(int, int)> matches = ResolveMatches(a, b);
+            //update board if matches are found
+            if (matches.Count > 0)
+            {
+                Debug.Log("Found matches: " + matches);
+                boardUpdate?.Invoke(matches);
+                foundMatches?.Invoke(matches);
+            }
+            tilesSwapped?.Invoke(swappedTiles);
+            return true;
         }
-        if(board[a].tileValue == 0 && board[b].tileValue == 0){
-            Debug.Log("Attempted to swap two blank tiles.");
-            return false;
-        }
-        if(board[a].tileValue == -1 || board[b].tileValue == -1){
-            Debug.Log("Attempted to swap with a special tile");
-            return false;
-        }
-        //Debug.Log("Succeeded in swapping.");
-        //Swap tiles via deconstruction
-        (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
-        List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
-        boardUpdate?.Invoke(swappedTiles);
-        List<(int, int)> matches = ResolveMatches(a, b);
-        //update board if matches are found
-        if (matches.Count > 0)
+        else
         {
-            Debug.Log("Found matches: " + matches);
-            boardUpdate?.Invoke(matches);
-            foundMatches?.Invoke(matches);
+            (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
+            return true;
         }
-        tilesSwapped?.Invoke(swappedTiles);
-        return true;
 
+    }
+
+    //Tiles only "move" when they fall
+    //Tile below must be empty in order for another (filled tile) to fall into it
+    //We should only call this on tiles flagged for moving
+    public IEnumerator DropTile((int, int) tilePos)
+    {
+        (int, int) newPos = GetTile(tilePos, BoardDir.Below);
+        yield return new WaitUntil(() => board[newPos].tileValue == 0);
+        //swapped values
+        SwapTiles(tilePos, newPos, true);
+        //now handle the flags
+        
+        //empty tile is not moving, but is resolving if there's another tile above it
+        board[tilePos].moving = false;
+        board[tilePos].resolving = board[GetTile(tilePos, BoardDir.Above)].tileValue > 0;
+        //tile we swapped into is no longer resolving, but continues to move if tile below is empty
+        board[newPos].resolving = false;
+        board[newPos].moving = board[GetTile(tilePos, BoardDir.Below)].tileValue == 0;
     }
 
     #region Tile_Matching
@@ -256,4 +282,68 @@ public class PuzlBoard
     
     #endregion
     
+    #region Helpers
+
+    public enum BoardDir
+    {
+        Left, Right, Above, Below
+    }
+
+    public (int, int) GetTile((int x, int y) tilePos, BoardDir direction/*, out Tile newPos*/)
+    {
+        switch (direction)
+        {
+            case BoardDir.Above:
+            {
+                if (tilePos.x + 1 >= boardRows) {
+                    Debug.LogError("Tile out of bounds: " + (tilePos.x + 1, tilePos.y));
+                    //newPos = null;
+                    return (-1, -1);
+                }
+
+                //newPos = board[(tilePos.x + 1, tilePos.y)];;
+                return (tilePos.x + 1, tilePos.y);
+            }
+
+            case BoardDir.Below:
+            {
+                if (tilePos.x - 1 < 0) {
+                    Debug.LogError("Tile out of bounds: " + (tilePos.x - 1, tilePos.y));
+                    //newPos = null;
+                    return (-1, -1);
+                }
+                //newPos = board[(tilePos.x - 1, tilePos.y)];
+                return (tilePos.x - 1, tilePos.y);
+            }
+            case BoardDir.Left:
+            {
+                if (tilePos.y + 1 >= boardColumns) {
+                    Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y + 1));
+                    //newPos = null;
+                    return (-1, -1);
+                }
+                //newPos = board[(tilePos.x, tilePos.y)];
+                return (tilePos.x, tilePos.y);
+            }
+            case BoardDir.Right:
+            {
+                if (tilePos.y - 1 < 0) {
+                    Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y));
+                    //newPos = null;
+                    return (-1, -1);
+                }
+
+                //newPos = board[(tilePos.x, tilePos.y)];
+                return (tilePos.x, tilePos.y);
+            }
+            default:
+            {
+                Debug.LogError("Attempted to get a tile in a direction without a valid direction selected");
+                //newPos = null;
+                return (-1, -1);
+            }
+                
+        }
+    }
+    #endregion
 }

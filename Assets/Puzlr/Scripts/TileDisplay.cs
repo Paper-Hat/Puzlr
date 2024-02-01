@@ -9,36 +9,15 @@ using UnityEngine.UI;
 public class TileDisplay : MonoBehaviour
 {
     [SerializeField] private Image tileImage;
-    private (int x, int y) tilePos; //cols, rows
+    private (int x, int y) tilePos; //column pos, row pos
     [SerializeField] private Rect worldRect;
     void Awake()
     {
         Controls.OnDragged += SwapTile;
     }
     
-    
-    #if UNITY_EDITOR
-    [SerializeField]private int x;
-    [SerializeField]private int y;
-    void FixedUpdate()
-    {
-        x = (int)transform.position.x;
-        y = (int)transform.position.y;
-        
-    }
-    #endif
-    
     public void ConfigureImage(bool hide, Sprite toSet = null)
     {
-        /*Controls.OnDragged -= SwapTile;
-
-        if (hide)
-            tileImage.enabled = false;
-        else {
-            tileImage.enabled = true;
-            Controls.OnDragged += SwapTile;
-        }*/
-
         tileImage.enabled = !hide;
         tileImage.sprite = toSet;
     }
@@ -47,7 +26,7 @@ public class TileDisplay : MonoBehaviour
         tilePos = pos;
     }
 
-    public void ConfigureWorldRect(Vector3 position)
+    private void ConfigureWorldRect(Vector3 position)
     {
         var realPos = position;
         var rectPos = new Vector3(realPos.x - 0.5f*GameManager.TileSize, realPos.y + 0.5f*GameManager.TileSize);
