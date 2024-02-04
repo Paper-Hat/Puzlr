@@ -5,6 +5,8 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
+
+//TODO: Handle straggler tiles (tiles that hover but should fall), create playable game loop
 public class PuzlBoard
 {
     
@@ -26,6 +28,7 @@ public class PuzlBoard
     }
 
     public int boardRows, boardColumns;
+    public float DropDelay = 1f;
     private bool CanMatchVertical = false;
     private Dictionary<(int, int), Tile> board;
     public delegate void OnTileSwap(List<(int, int)> tilesSwapped);
@@ -97,23 +100,18 @@ public class PuzlBoard
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
             List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
             boardUpdate?.Invoke(swappedTiles);
-            List<(int, int)> matches = ResolveMatches(a, b);
-            //update board if matches are found
-            if (matches.Count > 0)
-            {
-                Debug.Log("Found matches: " + matches);
-                boardUpdate?.Invoke(matches);
-                foundMatches?.Invoke(matches);
-            }
+            //List<(int, int)> matches = ResolveMatches(a, b);
+            ResolveMatches(a, b);
             tilesSwapped?.Invoke(swappedTiles);
-            return true;
         }
         else
         {
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
-            return true;
+            List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
+            ResolveMatches(b, (-1, -1));
+            boardUpdate?.Invoke(swappedTiles);
         }
-
+        return true;
     }
 
     //Tiles only "move" when they fall
@@ -121,36 +119,51 @@ public class PuzlBoard
     //We should only call this on tiles flagged for moving
     public IEnumerator DropTile((int, int) tilePos)
     {
-        (int, int) newPos = GetTile(tilePos, BoardDir.Below);
+        yield return new WaitForSeconds(DropDelay);
+        (int x, int y) newPos = GetTile(tilePos, BoardDir.Below);
         yield return new WaitUntil(() => board[newPos].tileValue == 0);
         //swapped values
-        SwapTiles(tilePos, newPos, true);
-        //now handle the flags
         
+        //now handle the flags
+        //Debug.Log(tilePos);
         //empty tile is not moving, but is resolving if there's another tile above it
         board[tilePos].moving = false;
         board[tilePos].resolving = board[GetTile(tilePos, BoardDir.Above)].tileValue > 0;
         //tile we swapped into is no longer resolving, but continues to move if tile below is empty
         board[newPos].resolving = false;
-        board[newPos].moving = board[GetTile(tilePos, BoardDir.Below)].tileValue == 0;
+        board[newPos].moving = (newPos.x - 1 >= 0) && (board[GetTile(newPos, BoardDir.Below)].tileValue == 0 || board[GetTile(newPos, BoardDir.Below)].moving);
+        SwapTiles(tilePos, newPos, true);
+        //if tile hits a spot where it's no longer moving, see if there are any matches
+        if (!board[newPos].moving)
+        {
+            yield return new WaitForSeconds(DropDelay*0.75f);
+            ResolveMatches(newPos, (-1, -1));
+        }
+
+        board[tilePos].tileDrop = null;
     }
 
     #region Tile_Matching
     //checks rows and columns of swapped tiles for matches
     //our match checks assume that tiles can only be swapped horizontally
-    private List<(int, int)> ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
+    private /*List<(int, int)>*/void ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
         List<(int, int)> allMatches = new();
+        bool singleCoord = (coordinate2 == (-1, -1));
+
         allMatches = allMatches.Concat(MatchesHorizontal(coordinate1))
-                                .Concat(MatchesHorizontal(coordinate2))
-                                .Concat(MatchesVertical(coordinate1))
-                                .Concat(MatchesVertical(coordinate2)).ToList();
+            .Concat(MatchesVertical(coordinate1)).ToList();
+        
+        if(!singleCoord)
+            allMatches = allMatches.Concat(MatchesHorizontal(coordinate2)).Concat(MatchesVertical(coordinate2)).ToList();
         if (allMatches.Count > 0) {
             foreach (var pos in allMatches) {
                 board[pos].tileValue = 0;
             }
+            Debug.Log("Found matches: " + allMatches);
+            boardUpdate?.Invoke(allMatches);
+            foundMatches?.Invoke(allMatches);
         }
-
-        return allMatches;
+        //return allMatches;
     }
 
     //checks horizontal matches to the right given a coordinate
@@ -191,7 +204,7 @@ public class PuzlBoard
         Tile checkingTile = board[coord];
         //empty tile should not be checked against
         if (checkingTile.tileValue == 0) return matches;
-        //check downward
+        //check downward until we reach a tile that doesn't match
         for (int i = coord.x - 1; i >= 0; i--) {
             Tile toCheckAgainst = board[(i, coord.y)];
             if (checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving) {
@@ -202,11 +215,11 @@ public class PuzlBoard
             }
         }
 
-        //check upwards
-        for (int i = coord.x + 1; i < boardColumns; i++) {
-            Tile toCheckAgainst = board[(i, coord.y)];
-            if (checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving) {
-                matches.Add((i, coord.y));
+        //check upwards, again until we reach a tile that doesn't match
+        for (int j = coord.x + 1; j < boardRows; j++) {
+            Tile toCheckAgainst = board[(j, coord.y)];
+            if (checkingTile.tileValue == toCheckAgainst.tileValue) {
+                matches.Add((j, coord.y));
             }
             else
             {
@@ -233,27 +246,42 @@ public class PuzlBoard
             //if we submitted an empty tile, make any existing tiles above it fall
             if (thisTile.tileValue == 0) {
                 if (tile.x + 1 >= boardRows) continue;
-                Tile tileAbove = board[(tile.x + 1, tile.y)];
-                board[tile].resolving = tileAbove.tileValue > 0;
-                for (int i = tile.x + 1; i < boardColumns; i++) {
+
+                board[tile].resolving = board[GetTile(tile, BoardDir.Above)].tileValue > 0;
+                for (int i = tile.x + 1; i < boardRows; i++) {
                     var iterTile = board[(i, tile.y)];
-                    if (iterTile.tileValue == -1)
+                    if (iterTile.tileValue is -1 or 0)
                         break;
-                    if (iterTile.tileValue > 0) {
-                        tileAbove.moving = true;
-                    }
+                    iterTile.moving = true;
+
                 }
                 
             }
-            //if it's a non-zero tile, check to see if it needs to fall
+            //if it's a non-zero tile, check to see if it needs to fall by iterating downward
             else
             {
                 if (tile.x - 1 < 0) continue;
-                Tile tileBelow = board[(tile.x - 1, tile.y)];
-                if (tileBelow.tileValue == 0) {
-                    tileBelow.resolving = true;
-                    thisTile.moving = true;
+                for (int i = tile.x - 1; i >= 0;i--)
+                {
+                    var iterTile = board[(i, tile.y)];
+                    if (iterTile.tileValue == -1)
+                        break;
+                    else if (iterTile.tileValue == 0)
+                    {
+                        iterTile.resolving = true;
+                        thisTile.moving = true;
+                    }
+                    else if (iterTile.moving)
+                    {
+                        thisTile.moving = true;
+                    }
+                    
                 }
+                //(int, int) belowPos = GetTile(tile, BoardDir.Below);
+                //if(board[belowPos].tileValue == 0 || board[belowPos].moving){
+                //    board[belowPos].resolving = true;
+                //    thisTile.moving = true;
+                //}
                 
             }
         }
@@ -289,7 +317,7 @@ public class PuzlBoard
         Left, Right, Above, Below
     }
 
-    public (int, int) GetTile((int x, int y) tilePos, BoardDir direction/*, out Tile newPos*/)
+    public (int, int) GetTile((int x, int y) tilePos, BoardDir direction)
     {
         switch (direction)
         {
@@ -297,11 +325,8 @@ public class PuzlBoard
             {
                 if (tilePos.x + 1 >= boardRows) {
                     Debug.LogError("Tile out of bounds: " + (tilePos.x + 1, tilePos.y));
-                    //newPos = null;
                     return (-1, -1);
                 }
-
-                //newPos = board[(tilePos.x + 1, tilePos.y)];;
                 return (tilePos.x + 1, tilePos.y);
             }
 
@@ -309,10 +334,8 @@ public class PuzlBoard
             {
                 if (tilePos.x - 1 < 0) {
                     Debug.LogError("Tile out of bounds: " + (tilePos.x - 1, tilePos.y));
-                    //newPos = null;
                     return (-1, -1);
                 }
-                //newPos = board[(tilePos.x - 1, tilePos.y)];
                 return (tilePos.x - 1, tilePos.y);
             }
             case BoardDir.Left:
@@ -344,6 +367,14 @@ public class PuzlBoard
             }
                 
         }
+    }
+
+    public List<(int, int)> GetFallingTiles()
+    {
+        List<(int, int)> fallingTiles = board.Keys.Where(x => board[x].moving).ToList();
+        //var stragglers = board.Keys.Where(x => board[x].resolving && !board[GetTile(x, BoardDir.Above)].moving);
+        //handle unresolved tiles
+        return fallingTiles.ToList();
     }
     #endregion
 }

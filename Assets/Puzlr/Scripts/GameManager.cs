@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 public class GameManager : MonoBehaviour
@@ -23,10 +25,14 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         Board = new PuzlBoard(xDimensions, yDimensions);
+        BoardDisplayHandler._displayHandler.SetBoardRef(Board);
         BoardDisplayHandler._displayHandler.CreateDisplay(); 
         Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
         
     }
-    
 
+    private void FixedUpdate()
+    {
+        
+    }
 }

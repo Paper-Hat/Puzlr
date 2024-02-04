@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -14,33 +15,38 @@ public class BoardDisplayHandler : MonoBehaviour
     [SerializeField] private GameObject gameRowPrefab;
     [SerializeField] private GameObject tilePrefab;
     public static BoardDisplayHandler _displayHandler;
+    private PuzlBoard _board;
     void Awake()
     {
         _displayHandler = this;
+        
         PuzlBoard.boardUpdate += UpdateDisplay;
     }
 
+    public void SetBoardRef(PuzlBoard board)
+    {
+        _board = board;
+    }
     //set width and height of canvas dependant on board size
     //let's assume cell size is always 64x64 squares
     public void CreateDisplay()
     {
-        PuzlBoard board = GameManager.Board;
         boardDisplay = new();
-        boardViewport.sizeDelta = new Vector2(board.boardColumns * 64, board.boardRows * 64);
-        boardContentRoot.sizeDelta = new Vector2(board.boardColumns * 64, board.boardRows * 64);
+        boardViewport.sizeDelta = new Vector2(_board.boardColumns * 64, _board.boardRows * 64);
+        boardContentRoot.sizeDelta = new Vector2(_board.boardColumns * 64, _board.boardRows * 64);
         
         
-        for (int i = 0; i < board.boardRows; i++) {
+        for (int i = 0; i < _board.boardRows; i++) {
             
             //create row object
             GameObject rowObj = Instantiate(gameRowPrefab, boardContentRoot);
             
             //adjust it to content delta
             RectTransform rowRect = rowObj.GetComponent<RectTransform>();
-            rowRect.sizeDelta = new Vector2(board.boardColumns * 64, 64);
+            rowRect.sizeDelta = new Vector2(_board.boardColumns * 64, 64);
             
             //create display cells within each row
-            for (int j = 0; j < board.boardColumns; j++)
+            for (int j = 0; j < _board.boardColumns; j++)
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rowRect);
                 TileDisplay display = Instantiate(tilePrefab, rowObj.transform).GetComponent<TileDisplay>();
@@ -66,4 +72,15 @@ public class BoardDisplayHandler : MonoBehaviour
             td.ConfigureImage(false, GameManager._instance.tileSprites[gameTile.tileValue]);
         }
     }
+
+    private void LateUpdate()
+    {
+        if(_board.GetFallingTiles().Any()) {
+            foreach (var tilePos in _board.GetFallingTiles()) {
+                _board[tilePos].tileDrop ??= StartCoroutine(_board.DropTile(tilePos));
+            }
+        }
+    }
+
+    
 }

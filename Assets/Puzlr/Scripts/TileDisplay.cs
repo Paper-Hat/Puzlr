@@ -18,7 +18,7 @@ public class TileDisplay : MonoBehaviour
     
     public void ConfigureImage(bool hide, Sprite toSet = null)
     {
-        tileImage.enabled = !hide;
+        //tileImage.enabled = !hide;
         tileImage.sprite = toSet;
     }
     public void SetPos((int x, int y) pos)
@@ -72,11 +72,19 @@ public class TileDisplay : MonoBehaviour
         }
     }
 
+    #if UNITY_EDITOR
+    [SerializeField]private Tile tileInfo;
+    void LateUpdate()
+    {
+        if(GameManager.Board != null)
+            tileInfo = GameManager.Board[tilePos];
+    }
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(worldRect.center,new Vector3(worldRect.width, worldRect.height, 0f));
         Handles.Label(worldRect.center, ""+tilePos);
     }
+    #endif
     
 }

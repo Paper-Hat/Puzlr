@@ -675,10 +675,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ced669f04456b54d8a3d559d69ef844, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xDimensions: 14
-  yDimensions: 7
+  xDimensions: 13
+  yDimensions: 6
   distinctTiles: 4
-  defaultRowFillCount: 3
+  defaultRowFillCount: 8
   tileSprites:
   - {fileID: 10917, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 21300000, guid: f15cb73e13429934f9e0b7f9fad395bb, type: 3}
