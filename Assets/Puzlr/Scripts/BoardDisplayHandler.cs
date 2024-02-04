@@ -32,8 +32,8 @@ public class BoardDisplayHandler : MonoBehaviour
     public void CreateDisplay()
     {
         boardDisplay = new();
-        boardViewport.sizeDelta = new Vector2(_board.boardColumns * 64, _board.boardRows * 64);
-        boardContentRoot.sizeDelta = new Vector2(_board.boardColumns * 64, _board.boardRows * 64);
+        boardViewport.sizeDelta = new Vector2(_board.boardColumns * GameManager.TileSize, _board.boardRows * GameManager.TileSize);
+        boardContentRoot.sizeDelta = new Vector2(_board.boardColumns * GameManager.TileSize, _board.boardRows * GameManager.TileSize);
         
         
         for (int i = 0; i < _board.boardRows; i++) {
@@ -43,7 +43,7 @@ public class BoardDisplayHandler : MonoBehaviour
             
             //adjust it to content delta
             RectTransform rowRect = rowObj.GetComponent<RectTransform>();
-            rowRect.sizeDelta = new Vector2(_board.boardColumns * 64, 64);
+            rowRect.sizeDelta = new Vector2(_board.boardColumns * GameManager.TileSize, GameManager.TileSize);
             
             //create display cells within each row
             for (int j = 0; j < _board.boardColumns; j++)

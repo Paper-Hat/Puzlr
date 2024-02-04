@@ -12,6 +12,7 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public delegate void OnPtrDrag(((int sdX, int sdY),(int edX, int edY)) dragValue);
     public static event OnPtrDrag OnDragged;
     public static bool HorizontalSwapsOnly = true;
+    public static float DragThreshold = 0.75f;
     public enum Direction
     {
         Left, Right, Up, Down
@@ -44,6 +45,7 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     private ((int sdX, int sdY) sDrag, (int edX, int edY) eDrag) _mDrag;
     private bool mouseDown;
     private bool dragging;
+    
 
     //update mouse when it moves, tracking mouse x, y
     void UpdateMousePos(int mouseX, int mouseY)
@@ -116,9 +118,13 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        
+
         UpdateDrag(false, true);
         //only trigger drag event on end
+        //TODO: filter smaller drag(s) out as unintentional based on multiplier
+        if (Mathf.Abs(MouseDrag.endDrag.endDragX - MouseDrag.startDrag.startDragX) <
+            DragThreshold * GameManager.TileSize)
+            return;
         OnPtrDrag dragEvent = OnDragged;
         dragEvent?.Invoke(MouseDrag);
     }

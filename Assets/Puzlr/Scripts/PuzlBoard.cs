@@ -159,7 +159,7 @@ public class PuzlBoard
             foreach (var pos in allMatches) {
                 board[pos].tileValue = 0;
             }
-            Debug.Log("Found matches: " + allMatches);
+            //Debug.Log("Found matches: " + allMatches);
             boardUpdate?.Invoke(allMatches);
             foundMatches?.Invoke(allMatches);
         }
@@ -218,7 +218,7 @@ public class PuzlBoard
         //check upwards, again until we reach a tile that doesn't match
         for (int j = coord.x + 1; j < boardRows; j++) {
             Tile toCheckAgainst = board[(j, coord.y)];
-            if (checkingTile.tileValue == toCheckAgainst.tileValue) {
+            if (checkingTile.tileValue == toCheckAgainst.tileValue && !toCheckAgainst.moving) {
                 matches.Add((j, coord.y));
             }
             else
