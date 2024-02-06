@@ -5,11 +5,9 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-
-//TODO: Handle straggler tiles (tiles that hover but should fall), create playable game loop
+//TODO: Scoring, score display, show next tile on game board before it's spawned, transition from start to game screen
 public class PuzlBoard
 {
-    
     public Tile this[int x, int y]{
         get{
             return board[(x, y)];
@@ -61,6 +59,8 @@ public class PuzlBoard
         }
         //board completed
     }
+    
+    //TODO: edit s.t. spawned tiles do not create matches before gameplay begins
     public void FillBoardRandom(int numUniqueTileTypes, int defaultRowFillCount)
     {
         List<(int, int)> filledPositions = new();
@@ -117,7 +117,7 @@ public class PuzlBoard
     //Tiles only "move" when they fall
     //Tile below must be empty in order for another (filled tile) to fall into it
     //We should only call this on tiles flagged for moving
-    public IEnumerator DropTile((int, int) tilePos)
+    public IEnumerator DropTile((int x, int y) tilePos)
     {
         yield return new WaitForSeconds(DropDelay);
         (int x, int y) newPos = GetTile(tilePos, BoardDir.Below);
@@ -128,7 +128,7 @@ public class PuzlBoard
         //Debug.Log(tilePos);
         //empty tile is not moving, but is resolving if there's another tile above it
         board[tilePos].moving = false;
-        board[tilePos].resolving = board[GetTile(tilePos, BoardDir.Above)].tileValue > 0;
+        board[tilePos].resolving =  (tilePos.x == boardRows - 1 || board[GetTile(tilePos, BoardDir.Above)].tileValue > 0);
         //tile we swapped into is no longer resolving, but continues to move if tile below is empty
         board[newPos].resolving = false;
         board[newPos].moving = (newPos.x - 1 >= 0) && (board[GetTile(newPos, BoardDir.Below)].tileValue == 0 || board[GetTile(newPos, BoardDir.Below)].moving);
@@ -290,7 +290,7 @@ public class PuzlBoard
     
     #region Tile Spawning
 
-    void PlaceTile(int value, (int x, int y) coordinate, bool fromTopOfBoard = false)
+    public void PlaceTile(int value, (int x, int y) coordinate, bool fromTopOfBoard = false)
     {
         if(coordinate.x >= boardRows || coordinate.y >= boardColumns)
             Debug.LogError("Coordinate to place exceeds board size.");
@@ -303,8 +303,7 @@ public class PuzlBoard
         
         Tile modifiedTile = board[coordinate];
         modifiedTile.tileValue = value;
-        modifiedTile.resolving = true;
-        if (board[(coordinate.x - 1, coordinate.y)].tileValue == 0)
+        if (board[GetTile(coordinate, BoardDir.Below)].tileValue == 0)
             modifiedTile.moving = true;
     }
     

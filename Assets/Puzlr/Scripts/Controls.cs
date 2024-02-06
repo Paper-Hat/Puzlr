@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+
 public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointerClickHandler, IBeginDragHandler, IEndDragHandler, IMoveHandler, IPointerDownHandler, IPointerUpHandler
 {
     //for controls handling
@@ -12,7 +13,8 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public delegate void OnPtrDrag(((int sdX, int sdY),(int edX, int edY)) dragValue);
     public static event OnPtrDrag OnDragged;
     public static bool HorizontalSwapsOnly = true;
-    public static float DragThreshold = 0.75f;
+    public float DragThreshold = 0.75f;
+    
     public enum Direction
     {
         Left, Right, Up, Down

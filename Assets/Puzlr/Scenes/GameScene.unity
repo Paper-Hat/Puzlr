@@ -217,6 +217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aab45b11c1418d743853dc056b2a8175, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DragThreshold: 0.35
 --- !u!114 &146698832
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -675,10 +676,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ced669f04456b54d8a3d559d69ef844, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xDimensions: 13
-  yDimensions: 6
-  distinctTiles: 4
-  defaultRowFillCount: 8
+  xDimensions: 16
+  yDimensions: 12
+  distinctTiles: 5
+  defaultRowFillCount: 4
   tileSprites:
   - {fileID: 10917, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 21300000, guid: f15cb73e13429934f9e0b7f9fad395bb, type: 3}
@@ -688,6 +689,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 6ca5e98c40f6ede4d921abccd2c2584f, type: 3}
   - {fileID: 21300000, guid: d89267c0f1af25b4f9d5a2d8d7f599d4, type: 3}
   - {fileID: 21300000, guid: de5a4d0cd92a8ac458fae4710c4c367e, type: 3}
+  tileDropTimer: 5
 --- !u!4 &1721363712
 Transform:
   m_ObjectHideFlags: 0
