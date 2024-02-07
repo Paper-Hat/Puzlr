@@ -26,6 +26,7 @@ public class PuzlBoard
     }
 
     public int boardRows, boardColumns;
+    public int TilesRequiredToMatch = 3;
     public float DropDelay = 1f;
     private bool CanMatchVertical = false;
     private Dictionary<(int, int), Tile> board;
@@ -192,7 +193,7 @@ public class PuzlBoard
                 break;
             }
         }
-        if(matches.Count <= 2)
+        if(matches.Count < TilesRequiredToMatch)
             matches.Clear();
         return matches;
     }
@@ -227,7 +228,7 @@ public class PuzlBoard
             }
         }
 
-        if(matches.Count <= 2) matches.Clear();
+        if(matches.Count < TilesRequiredToMatch) matches.Clear();
         return matches;
     }
     #endregion

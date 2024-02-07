@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -15,6 +16,7 @@ public class GameManager : MonoBehaviour
     public const int TileSize = 64;
     [Range(4, 7)] public int distinctTiles = 4;
     public int defaultRowFillCount = 3;
+    [Range(3, 5)] public int MatchRequirement = 3;
     public List<Sprite> tileSprites;
     public static GameManager _instance;
     public static GameType GameMode;
@@ -54,6 +56,8 @@ public class GameManager : MonoBehaviour
                     Board = new PuzlBoard(xDimensions, yDimensions);
                     BoardDisplayHandler._displayHandler.SetBoardRef(Board);
                     BoardDisplayHandler._displayHandler.CreateDisplay();
+                    Board.TilesRequiredToMatch = MatchRequirement;
+                    Board.DropDelay = tileDropTimer;
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
                     PuzlBoard.boardOverflow += GameOver;
                     break;
@@ -74,7 +78,7 @@ public class GameManager : MonoBehaviour
                 case GameType.Default:
                     //place random tile at the top of the board on the timer
                     //this gamemode is effectively "endless" mode
-                    yield return new WaitForSeconds(tileDropTimer);
+                    yield return new WaitForSeconds(Board.DropDelay);
                     Board.PlaceTile(Random.Range(1, distinctTiles), (Board.boardRows - 1, Random.Range(0, Board.boardColumns)), true);
                     break;
                 case GameType.Special:
