@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: Scoring, score display, show next tile on game board before it's spawned, transition from start to game screen
+//TODO: Score display, show next tile on game board before it's spawned, transition from start to game screen
 public class PuzlBoard
 {
     public Tile this[int x, int y]{
@@ -150,12 +150,14 @@ public class PuzlBoard
     private /*List<(int, int)>*/void ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
         List<(int, int)> allMatches = new();
         bool singleCoord = (coordinate2 == (-1, -1));
-
+        
         allMatches = allMatches.Concat(MatchesHorizontal(coordinate1))
             .Concat(MatchesVertical(coordinate1)).ToList();
-        
-        if(!singleCoord)
+        if (!singleCoord) {
             allMatches = allMatches.Concat(MatchesHorizontal(coordinate2)).Concat(MatchesVertical(coordinate2)).ToList();
+        }
+
+        allMatches = allMatches.Distinct().ToList();
         if (allMatches.Count > 0) {
             foreach (var pos in allMatches) {
                 board[pos].tileValue = 0;
@@ -172,7 +174,7 @@ public class PuzlBoard
         List<(int, int)> matches = new List<(int, int)> {coord};
         Tile checkingTile = board[coord];
         //empty tile should not be checked against
-        if (checkingTile.tileValue == 0) return matches;
+        if (checkingTile.tileValue == 0) return new List<(int, int)>();
         //iterate right, stopping if we find a tile that doesn't match
         for(int i = coord.y + 1; i < boardColumns; i++){
             Tile toCheckAgainst = board[(coord.x, i)];
@@ -193,6 +195,8 @@ public class PuzlBoard
                 break;
             }
         }
+
+        matches = matches.Distinct().ToList();
         if(matches.Count < TilesRequiredToMatch)
             matches.Clear();
         return matches;
@@ -204,7 +208,7 @@ public class PuzlBoard
         List<(int, int)> matches = new List<(int, int)>{coord};
         Tile checkingTile = board[coord];
         //empty tile should not be checked against
-        if (checkingTile.tileValue == 0) return matches;
+        if (checkingTile.tileValue == 0) return new List<(int, int)>();
         //check downward until we reach a tile that doesn't match
         for (int i = coord.x - 1; i >= 0; i--) {
             Tile toCheckAgainst = board[(i, coord.y)];
@@ -227,7 +231,7 @@ public class PuzlBoard
                 break;
             }
         }
-
+        matches = matches.Distinct().ToList();
         if(matches.Count < TilesRequiredToMatch) matches.Clear();
         return matches;
     }

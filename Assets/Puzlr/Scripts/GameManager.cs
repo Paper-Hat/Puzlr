@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
     public static PuzlBoard Board;
+    public static ScoreHandler Score;
     [Header("GameType Agnostic Settings")]
     [SerializeField] [Range(10, 16)] private int xDimensions;
     [SerializeField] [Range(6, 12)] private int yDimensions;
@@ -23,7 +25,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Default Game Settings")] 
     //Time before new tile drops (in seconds)  
-    public int tileDropTimer;
+    public int timeUntilNewTileDropped;
     
     public Coroutine GameLoop;
     private bool _setup_complete;
@@ -54,10 +56,10 @@ public class GameManager : MonoBehaviour
             {
                 case GameType.Default:
                     Board = new PuzlBoard(xDimensions, yDimensions);
+                    Score = new ScoreHandler();
                     BoardDisplayHandler._displayHandler.SetBoardRef(Board);
                     BoardDisplayHandler._displayHandler.CreateDisplay();
                     Board.TilesRequiredToMatch = MatchRequirement;
-                    Board.DropDelay = tileDropTimer;
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
                     PuzlBoard.boardOverflow += GameOver;
                     break;
@@ -78,7 +80,7 @@ public class GameManager : MonoBehaviour
                 case GameType.Default:
                     //place random tile at the top of the board on the timer
                     //this gamemode is effectively "endless" mode
-                    yield return new WaitForSeconds(Board.DropDelay);
+                    yield return new WaitForSeconds(timeUntilNewTileDropped);
                     Board.PlaceTile(Random.Range(1, distinctTiles), (Board.boardRows - 1, Random.Range(0, Board.boardColumns)), true);
                     break;
                 case GameType.Special:
