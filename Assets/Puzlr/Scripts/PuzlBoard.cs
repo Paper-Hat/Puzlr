@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: Score display, show next tile on game board before it's spawned, transition from start to game screen
+//TODO: show next tile on game board before it's spawned, transition from start to game screen
 public class PuzlBoard
 {
     public Tile this[int x, int y]{
@@ -295,6 +295,10 @@ public class PuzlBoard
     
     #region Tile Spawning
 
+    public void PickTile(int value = -1, (int, int) location = default)
+    {
+        
+    }
     public void PlaceTile(int value, (int x, int y) coordinate, bool fromTopOfBoard = false)
     {
         if(coordinate.x >= boardRows || coordinate.y >= boardColumns)

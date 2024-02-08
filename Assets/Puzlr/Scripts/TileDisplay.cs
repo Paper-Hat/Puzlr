@@ -11,14 +11,14 @@ public class TileDisplay : MonoBehaviour
     [SerializeField] private Image tileImage;
     private (int x, int y) tilePos; //column pos, row pos
     [SerializeField] private Rect worldRect;
+    
     void Awake()
     {
         Controls.OnDragged += SwapTile;
     }
     
-    public void ConfigureImage(bool hide, Sprite toSet = null)
+    public void ConfigureImage(Sprite toSet = null)
     {
-        //tileImage.enabled = !hide;
         tileImage.sprite = toSet;
     }
     public void SetPos((int x, int y) pos)

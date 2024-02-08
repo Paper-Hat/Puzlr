@@ -65,11 +65,7 @@ public class BoardDisplayHandler : MonoBehaviour
         foreach (var pos in tilePos) {
             Tile gameTile = board[(pos)];
             TileDisplay td = boardDisplay[(pos)];
-            if (gameTile.tileValue == 0) {
-                td.ConfigureImage(true);
-                continue;
-            }
-            td.ConfigureImage(false, GameManager._instance.tileSprites[gameTile.tileValue]);
+            td.ConfigureImage(GameManager._instance.tileSprites[gameTile.tileValue]);
         }
     }
 
