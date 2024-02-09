@@ -123,10 +123,7 @@ public class PuzlBoard
         yield return new WaitForSeconds(DropDelay);
         (int x, int y) newPos = GetTile(tilePos, BoardDir.Below);
         yield return new WaitUntil(() => board[newPos].tileValue == 0);
-        //swapped values
-        
-        //now handle the flags
-        //Debug.Log(tilePos);
+        //once we've swapped, now we handle the flags
         //empty tile is not moving, but is resolving if there's another tile above it
         board[tilePos].moving = false;
         board[tilePos].resolving =  (tilePos.x == boardRows - 1 || board[GetTile(tilePos, BoardDir.Above)].tileValue > 0);
@@ -147,7 +144,7 @@ public class PuzlBoard
     #region Tile_Matching
     //checks rows and columns of swapped tiles for matches
     //our match checks assume that tiles can only be swapped horizontally
-    private /*List<(int, int)>*/void ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
+    private void ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
         List<(int, int)> allMatches = new();
         bool singleCoord = (coordinate2 == (-1, -1));
         
@@ -166,7 +163,7 @@ public class PuzlBoard
             boardUpdate?.Invoke(allMatches);
             foundMatches?.Invoke(allMatches);
         }
-        //return allMatches;
+        
     }
 
     //checks horizontal matches to the right given a coordinate
@@ -282,23 +279,12 @@ public class PuzlBoard
                     }
                     
                 }
-                //(int, int) belowPos = GetTile(tile, BoardDir.Below);
-                //if(board[belowPos].tileValue == 0 || board[belowPos].moving){
-                //    board[belowPos].resolving = true;
-                //    thisTile.moving = true;
-                //}
-                
             }
         }
     }
     #endregion
     
     #region Tile Spawning
-
-    public void PickTile(int value = -1, (int, int) location = default)
-    {
-        
-    }
     public void PlaceTile(int value, (int x, int y) coordinate, bool fromTopOfBoard = false)
     {
         if(coordinate.x >= boardRows || coordinate.y >= boardColumns)
@@ -380,9 +366,15 @@ public class PuzlBoard
     public List<(int, int)> GetFallingTiles()
     {
         List<(int, int)> fallingTiles = board.Keys.Where(x => board[x].moving).ToList();
-        //var stragglers = board.Keys.Where(x => board[x].resolving && !board[GetTile(x, BoardDir.Above)].moving);
-        //handle unresolved tiles
         return fallingTiles.ToList();
+    }
+    //Picks a random tile location
+    public (int, int) RandomTile(bool fromTop)
+    {
+        if (fromTop) {
+            return (boardRows - 1, Random.Range(0, boardColumns));
+        }
+        return (Random.Range(0, boardRows), Random.Range(0, boardColumns));
     }
     #endregion
 }

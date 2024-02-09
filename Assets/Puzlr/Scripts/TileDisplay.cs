@@ -46,8 +46,7 @@ public class TileDisplay : MonoBehaviour
         {
             return;
         }
-
-        //Debug.Log("Valid swap location(s): " + tilePos + "\n " + dragVal.Item1);
+        
         Controls.Direction dir = Controls.GetCardinalDirectionFromDrag(dragVal);
         if (Controls.HorizontalSwapsOnly)
         {

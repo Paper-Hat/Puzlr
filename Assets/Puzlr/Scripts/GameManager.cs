@@ -80,8 +80,13 @@ public class GameManager : MonoBehaviour
                 case GameType.Default:
                     //place random tile at the top of the board on the timer
                     //this gamemode is effectively "endless" mode
+                    
+                    int tileToPlace = Random.Range(1, distinctTiles);
+                    (int, int) locationToPlace = Board.RandomTile(true);
+                    
                     yield return new WaitForSeconds(timeUntilNewTileDropped);
-                    Board.PlaceTile(Random.Range(1, distinctTiles), (Board.boardRows - 1, Random.Range(0, Board.boardColumns)), true);
+                    
+                    Board.PlaceTile(tileToPlace, locationToPlace, true);
                     break;
                 case GameType.Special:
                     Debug.LogError("Not yet implemented.");
