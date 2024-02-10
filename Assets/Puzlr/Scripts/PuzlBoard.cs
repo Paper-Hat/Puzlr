@@ -109,7 +109,8 @@ public class PuzlBoard
         {
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
             List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
-            ResolveMatches(b, (-1, -1));
+            if(!board[b].moving)
+                ResolveMatches(b, (-1, -1));
             boardUpdate?.Invoke(swappedTiles);
         }
         return true;
@@ -300,6 +301,9 @@ public class PuzlBoard
         modifiedTile.tileValue = value;
         if (board[GetTile(coordinate, BoardDir.Below)].tileValue == 0)
             modifiedTile.moving = true;
+        
+        Debug.Log("Placed value "+modifiedTile.tileValue+" at location: ("+coordinate.x+", "+coordinate.y+")");
+        boardUpdate?.Invoke(new List<(int, int)>{coordinate});
     }
     
     #endregion

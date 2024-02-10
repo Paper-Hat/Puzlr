@@ -11,6 +11,7 @@ using Random = UnityEngine.Random;
 public class GameManager : MonoBehaviour
 {
     public static PuzlBoard Board;
+    public static BoardDisplayHandler DisplayHandler;
     public static ScoreHandler Score;
     [Header("GameType Agnostic Settings")]
     [SerializeField] [Range(10, 16)] private int xDimensions;
@@ -19,7 +20,7 @@ public class GameManager : MonoBehaviour
     [Range(4, 7)] public int distinctTiles = 4;
     public int defaultRowFillCount = 3;
     [Range(3, 5)] public int MatchRequirement = 3;
-    public List<Sprite> tileSprites;
+    public List<Color> tileColors;
     public static GameManager _instance;
     public static GameType GameMode;
 
@@ -57,8 +58,9 @@ public class GameManager : MonoBehaviour
                 case GameType.Default:
                     Board = new PuzlBoard(xDimensions, yDimensions);
                     Score = new ScoreHandler();
-                    BoardDisplayHandler._displayHandler.SetBoardRef(Board);
-                    BoardDisplayHandler._displayHandler.CreateDisplay();
+                    DisplayHandler = BoardDisplayHandler._displayHandler;
+                    DisplayHandler.SetBoardRef(Board);
+                    DisplayHandler.CreateDisplay();
                     Board.TilesRequiredToMatch = MatchRequirement;
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
                     PuzlBoard.boardOverflow += GameOver;
@@ -82,11 +84,12 @@ public class GameManager : MonoBehaviour
                     //this gamemode is effectively "endless" mode
                     
                     int tileToPlace = Random.Range(1, distinctTiles);
-                    (int, int) locationToPlace = Board.RandomTile(true);
-                    
+                    (int x, int y) locationToPlace = Board.RandomTile(true);
+                    //Debug.Log("Readying value "+tileToPlace+" to place at ("+locationToPlace.Item1+", "+locationToPlace.Item2+")");
+                    DisplayHandler.PreviewTile(locationToPlace.y, tileToPlace);
                     yield return new WaitForSeconds(timeUntilNewTileDropped);
-                    
                     Board.PlaceTile(tileToPlace, locationToPlace, true);
+                    
                     break;
                 case GameType.Special:
                     Debug.LogError("Not yet implemented.");

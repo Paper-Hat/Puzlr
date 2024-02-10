@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
@@ -9,7 +10,7 @@ using UnityEngine.UI;
 public class TileDisplay : MonoBehaviour
 {
     [SerializeField] private Image tileImage;
-    private (int x, int y) tilePos; //column pos, row pos
+    [ReadOnly(true)] private (int x, int y) tilePos; //column pos, row pos
     [SerializeField] private Rect worldRect;
     
     void Awake()
@@ -17,9 +18,17 @@ public class TileDisplay : MonoBehaviour
         Controls.OnDragged += SwapTile;
     }
     
-    public void ConfigureImage(Sprite toSet = null)
+    public void ConfigureImage(Color tileColor)
     {
-        tileImage.sprite = toSet;
+        if (tileColor.a == 0f)
+        {
+            tileImage.enabled = false;
+        }
+        else
+        {
+            tileImage.enabled = true;
+            tileImage.color = tileColor;
+        }
     }
     public void SetPos((int x, int y) pos)
     {
@@ -73,10 +82,14 @@ public class TileDisplay : MonoBehaviour
 
     #if UNITY_EDITOR
     [SerializeField]private Tile tileInfo;
+    [SerializeField][ReadOnly(true)] private int tileX;
+    [SerializeField][ReadOnly(true)] private int tileY;
     void LateUpdate()
     {
         if(GameManager.Board != null)
             tileInfo = GameManager.Board[tilePos];
+        tileX = tilePos.x;
+        tileY = tilePos.y;
     }
     private void OnDrawGizmos()
     {
