@@ -18,7 +18,6 @@ public class BoardDisplayHandler : MonoBehaviour
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject previewerPrefab;
     public static BoardDisplayHandler _displayHandler;
-    [SerializeField] private List<Color> tileColors;
     private PuzlBoard _board;
     void Awake()
     {
@@ -112,7 +111,7 @@ public class BoardDisplayHandler : MonoBehaviour
     }
     private void LateUpdate()
     {
-        if(_board.GetFallingTiles().Any()) {
+        if(_board != null && _board.GetFallingTiles().Any()) {
             foreach (var tilePos in _board.GetFallingTiles()) {
                 _board[tilePos].tileDrop ??= StartCoroutine(_board.DropTile(tilePos));
             }

@@ -8,12 +8,14 @@ using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
+
 public class GameManager : MonoBehaviour
 {
     public static PuzlBoard Board;
     public static BoardDisplayHandler DisplayHandler;
     public static ScoreHandler Score;
-    [Header("GameType Agnostic Settings")]
+    [Header("GameType Agnostic Settings")] 
+    public float GameStartDelay = 5f;
     [SerializeField] [Range(10, 16)] private int xDimensions;
     [SerializeField] [Range(6, 12)] private int yDimensions;
     public const int TileSize = 64;
@@ -22,7 +24,7 @@ public class GameManager : MonoBehaviour
     [Range(3, 5)] public int MatchRequirement = 3;
     public List<Color> tileColors;
     public static GameManager _instance;
-    public static GameType GameMode;
+    public static GameType GameMode = GameType.Default;
 
     [Header("Default Game Settings")] 
     //Time before new tile drops (in seconds)  
@@ -40,12 +42,22 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         _instance = this;
-        
+        DontDestroyOnLoad(this.gameObject);
     }
-
-    void Start()
+    
+#if UNITY_EDITOR
+    [Header("Test Scene")] 
+    [SerializeField] private GameType testGameType;
+    [SerializeField] private bool fromStartMenu;
+    private void Start()
     {
-        SetupGame(GameType.Default);
+        if(!fromStartMenu)
+            StartGame(testGameType);
+    }
+#endif
+    public void StartGame(GameType selectedGameType)
+    {
+        SetupGame(selectedGameType);
         GameLoop = StartCoroutine(PlayGame(GameMode));
     }
 
@@ -76,6 +88,7 @@ public class GameManager : MonoBehaviour
     public IEnumerator PlayGame(GameType gameMode)
     {
         yield return new WaitUntil(() => _setup_complete);
+        yield return new WaitForSeconds(GameStartDelay);
         while (continuePlaying) {
             switch (gameMode)
             {

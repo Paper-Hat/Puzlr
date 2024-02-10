@@ -5,7 +5,10 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: show next tile on game board before it's spawned, transition from start to game screen
+//TODO: game start timer/popup handler, animated tile dropping
+//TODO: Game over menu, quit to main menu/sceneload
+//TODO: Tile highlighting/arrows on swap
+//TODO: Settings menu, "Special" gametypes (speed, endless)
 public class PuzlBoard
 {
     public Tile this[int x, int y]{
@@ -61,15 +64,21 @@ public class PuzlBoard
         //board completed
     }
     
-    //TODO: edit s.t. spawned tiles do not create matches before gameplay begins
     public void FillBoardRandom(int numUniqueTileTypes, int defaultRowFillCount)
     {
         List<(int, int)> filledPositions = new();
         //Fill board with random tiles- if we're filling the top row, allow empty tiles to be "created"
         for(int i = 0; i < defaultRowFillCount; i++){
-            for(int j = 0; j < boardColumns; j++){
-                board[(i, j)].tileValue = (i == defaultRowFillCount - 1) ? Random.Range(0, numUniqueTileTypes + 1)
-                                                                         : Random.Range(1, numUniqueTileTypes + 1);
+            for(int j = 0; j < boardColumns; j++)
+            {
+                bool hasMatches = true;
+                while (hasMatches) {
+                    board[(i, j)].tileValue = (i == defaultRowFillCount - 1)
+                        ? Random.Range(0, numUniqueTileTypes + 1)
+                        : Random.Range(1, numUniqueTileTypes + 1);
+                    hasMatches = ResolveMatches((i, j), (-1, -1), true).Count > 0;
+                }
+
                 filledPositions.Add((i, j));
             }
         }
@@ -123,6 +132,12 @@ public class PuzlBoard
     {
         yield return new WaitForSeconds(DropDelay);
         (int x, int y) newPos = GetTile(tilePos, BoardDir.Below);
+        //update and handle edge case where a tile is left "moving" when a tile exists under it
+        if (board[newPos].tileValue > 0 && !board[newPos].moving) {
+            board[tilePos].moving = false;
+            board[tilePos].tileDrop = null;
+            yield break;
+        }
         yield return new WaitUntil(() => board[newPos].tileValue == 0);
         //once we've swapped, now we handle the flags
         //empty tile is not moving, but is resolving if there's another tile above it
@@ -145,7 +160,7 @@ public class PuzlBoard
     #region Tile_Matching
     //checks rows and columns of swapped tiles for matches
     //our match checks assume that tiles can only be swapped horizontally
-    private void ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2){
+    private List<(int, int)> ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2, bool setup = false){
         List<(int, int)> allMatches = new();
         bool singleCoord = (coordinate2 == (-1, -1));
         
@@ -156,7 +171,7 @@ public class PuzlBoard
         }
 
         allMatches = allMatches.Distinct().ToList();
-        if (allMatches.Count > 0) {
+        if (allMatches.Count > 0 && !setup) {
             foreach (var pos in allMatches) {
                 board[pos].tileValue = 0;
             }
@@ -164,7 +179,8 @@ public class PuzlBoard
             boardUpdate?.Invoke(allMatches);
             foundMatches?.Invoke(allMatches);
         }
-        
+
+        return allMatches;
     }
 
     //checks horizontal matches to the right given a coordinate
@@ -302,7 +318,7 @@ public class PuzlBoard
         if (board[GetTile(coordinate, BoardDir.Below)].tileValue == 0)
             modifiedTile.moving = true;
         
-        Debug.Log("Placed value "+modifiedTile.tileValue+" at location: ("+coordinate.x+", "+coordinate.y+")");
+        //Debug.Log("Placed value "+modifiedTile.tileValue+" at location: ("+coordinate.x+", "+coordinate.y+")");
         boardUpdate?.Invoke(new List<(int, int)>{coordinate});
     }
     
