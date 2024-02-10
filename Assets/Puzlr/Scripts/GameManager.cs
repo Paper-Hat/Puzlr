@@ -11,6 +11,7 @@ using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
+    
     public static PuzlBoard Board;
     public static BoardDisplayHandler DisplayHandler;
     public static ScoreHandler Score;
@@ -18,11 +19,10 @@ public class GameManager : MonoBehaviour
     public float GameStartDelay = 5f;
     [SerializeField] [Range(10, 16)] private int xDimensions;
     [SerializeField] [Range(6, 12)] private int yDimensions;
-    public const int TileSize = 64;
     [Range(4, 7)] public int distinctTiles = 4;
     public int defaultRowFillCount = 3;
     [Range(3, 5)] public int MatchRequirement = 3;
-    public List<Color> tileColors;
+
     public static GameManager _instance;
     public static GameType GameMode = GameType.Default;
 
@@ -70,7 +70,7 @@ public class GameManager : MonoBehaviour
                 case GameType.Default:
                     Board = new PuzlBoard(xDimensions, yDimensions);
                     Score = new ScoreHandler();
-                    DisplayHandler = BoardDisplayHandler._displayHandler;
+                    DisplayHandler = BoardDisplayHandler.DisplayHandler;
                     DisplayHandler.SetBoardRef(Board);
                     DisplayHandler.CreateDisplay();
                     Board.TilesRequiredToMatch = MatchRequirement;

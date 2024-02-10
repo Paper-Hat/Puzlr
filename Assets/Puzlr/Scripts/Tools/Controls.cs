@@ -125,7 +125,7 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
         //only trigger drag event on end
         //TODO: filter smaller drag(s) out as unintentional based on multiplier
         if (Mathf.Abs(MouseDrag.endDrag.endDragX - MouseDrag.startDrag.startDragX) <
-            DragThreshold * GameManager.TileSize)
+            DragThreshold * BoardDisplayHandler.TileSize)
             return;
         OnPtrDrag dragEvent = OnDragged;
         dragEvent?.Invoke(MouseDrag);

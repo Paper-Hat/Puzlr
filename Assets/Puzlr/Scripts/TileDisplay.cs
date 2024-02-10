@@ -38,11 +38,11 @@ public class TileDisplay : MonoBehaviour
     private void ConfigureWorldRect(Vector3 position)
     {
         var realPos = position;
-        var rectPos = new Vector3(realPos.x - 0.5f*GameManager.TileSize, realPos.y + 0.5f*GameManager.TileSize);
+        var rectPos = new Vector3(realPos.x - 0.5f*BoardDisplayHandler.TileSize, realPos.y + 0.5f*BoardDisplayHandler.TileSize);
         worldRect = Rect.MinMaxRect(rectPos.x,
             rectPos.y,
-            (rectPos.x + GameManager.TileSize),
-            (rectPos.y - GameManager.TileSize));
+            (rectPos.x + BoardDisplayHandler.TileSize),
+            (rectPos.y - BoardDisplayHandler.TileSize));
     }
     //if the drag started within the bounds of our display, then attempt to swap the tile based on direction of the swipe
     void SwapTile(((int, int), (int, int)) dragVal)

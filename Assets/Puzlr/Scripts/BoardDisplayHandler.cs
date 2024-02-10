@@ -17,11 +17,13 @@ public class BoardDisplayHandler : MonoBehaviour
     [SerializeField] private GameObject gameRowPrefab;
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject previewerPrefab;
-    public static BoardDisplayHandler _displayHandler;
+    public static int TileSize = 64;
+    public List<Color> tileColors;
+    public static BoardDisplayHandler DisplayHandler;
     private PuzlBoard _board;
     void Awake()
     {
-        _displayHandler = this;
+        DisplayHandler = this;
         
         PuzlBoard.boardUpdate += UpdateDisplay;
     }
@@ -35,9 +37,9 @@ public class BoardDisplayHandler : MonoBehaviour
     public void CreateDisplay()
     {
         boardDisplay = new();
-        boardViewport.sizeDelta = new Vector2(_board.boardColumns * GameManager.TileSize, _board.boardRows * GameManager.TileSize);
-        boardContentRoot.sizeDelta = new Vector2(_board.boardColumns * GameManager.TileSize, _board.boardRows * GameManager.TileSize);
-        Vector2 rowSize = new Vector2(_board.boardColumns * GameManager.TileSize, GameManager.TileSize);
+        boardViewport.sizeDelta = new Vector2(_board.boardColumns * TileSize, _board.boardRows * TileSize);
+        boardContentRoot.sizeDelta = new Vector2(_board.boardColumns * TileSize, _board.boardRows * TileSize);
+        Vector2 rowSize = new Vector2(_board.boardColumns * TileSize, TileSize);
         ConfigureBoard(rowSize);
         ConfigurePreviews(rowSize);
     }
@@ -60,6 +62,8 @@ public class BoardDisplayHandler : MonoBehaviour
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rowRect);
                 TileDisplay display = Instantiate(tilePrefab, rowObj.transform).GetComponent<TileDisplay>();
+                RectTransform displayRect = (RectTransform)display.transform;
+                displayRect.sizeDelta = new Vector2(TileSize, TileSize);
                 display.SetPos((i, j));
                 boardDisplay.Add((i, j), display);
                 
@@ -74,7 +78,7 @@ public class BoardDisplayHandler : MonoBehaviour
         Vector3 boardContentRootPos = boardContentRoot.transform.position;
         RectTransform contentRootRect = (RectTransform)boardContentRoot;
         Vector3 previewerRowPos = new Vector3(boardContentRootPos.x,
-            boardContentRootPos.y + (0.5f * contentRootRect.rect.height) + (0.5f * GameManager.TileSize), 0f);
+            boardContentRootPos.y + (0.5f * contentRootRect.rect.height) + (0.5f * TileSize), 0f);
         GameObject previewerRowObj = Instantiate(gameRowPrefab, gameObject.transform);
         RectTransform previewerRect = (RectTransform)previewerRowObj.transform;
         previewerRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -87,6 +91,8 @@ public class BoardDisplayHandler : MonoBehaviour
         for (int i = 0; i < _board.boardColumns; i++)
         {
             TilePreview previewer = Instantiate(previewerPrefab, previewerRowObj.transform).GetComponent<TilePreview>();
+            RectTransform previewerObjRect= (RectTransform)previewer.transform;
+            previewerObjRect.sizeDelta = new Vector2(TileSize, TileSize);
             previewObjects.Add(previewer);
         }
     }
@@ -96,14 +102,14 @@ public class BoardDisplayHandler : MonoBehaviour
         foreach (var pos in tilePos) {
             Tile gameTile = board[(pos)];
             TileDisplay td = boardDisplay[(pos)];
-            td.ConfigureImage(GameManager._instance.tileColors[gameTile.tileValue]);
+            td.ConfigureImage(tileColors[gameTile.tileValue]);
         }
     }
 
     public void PreviewTile(int column, int value)
     {
         if(previewObjects[column].previewerCo == null)
-            previewObjects[column].PreviewTile(GameManager._instance.tileColors[value]);
+            previewObjects[column].PreviewTile(tileColors[value]);
         else
         {
             Debug.Log("Attempted to preview when a preview was already playing.");

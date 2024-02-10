@@ -49,7 +49,7 @@ public class ScoreHandler
     {
         //base score increment is the total number of tiles in the match multiplied by speed
         //we further add to this if the match requirement exceeds the base
-        Debug.Log(matches.Count);
+        //Debug.Log(matches.Count);
         playerScore += (matches.Count 
             * (int)(10 - GameManager.Board.DropDelay) 
             + (excessMatchMultiplier * (GameManager.Board.TilesRequiredToMatch - 3)));
