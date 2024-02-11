@@ -30,6 +30,16 @@ public class TileDisplay : MonoBehaviour
             tileImage.color = tileColor;
         }
     }
+
+    public void SetDisplaySize(int displaySize)
+    {
+        RectTransform thisRect = (RectTransform)transform;
+        thisRect.sizeDelta = new Vector2(displaySize, displaySize);
+        foreach (RectTransform t in transform)
+        {
+            t.sizeDelta = new Vector2(displaySize, displaySize);
+        }
+    }
     public void SetPos((int x, int y) pos)
     {
         tilePos = pos;

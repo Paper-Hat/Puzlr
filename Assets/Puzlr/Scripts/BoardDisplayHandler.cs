@@ -28,6 +28,10 @@ public class BoardDisplayHandler : MonoBehaviour
         PuzlBoard.boardUpdate += UpdateDisplay;
     }
 
+    public void SetTileSize(int size)
+    {
+        TileSize = size;
+    }
     public void SetBoardRef(PuzlBoard board)
     {
         _board = board;
@@ -62,8 +66,7 @@ public class BoardDisplayHandler : MonoBehaviour
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rowRect);
                 TileDisplay display = Instantiate(tilePrefab, rowObj.transform).GetComponent<TileDisplay>();
-                RectTransform displayRect = (RectTransform)display.transform;
-                displayRect.sizeDelta = new Vector2(TileSize, TileSize);
+                display.SetDisplaySize(TileSize);
                 display.SetPos((i, j));
                 boardDisplay.Add((i, j), display);
                 
