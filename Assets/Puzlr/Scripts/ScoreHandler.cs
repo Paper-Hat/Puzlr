@@ -78,4 +78,14 @@ public class ScoreHandler
         scoreUpdated?.Invoke();
     }
     
+    //getters
+    public int GetTotalMatches()
+    {
+        return numTotalMatches;
+    }
+
+    public int GetTotalTilesMatched()
+    {
+        return numTotalMatches;
+    }
 }

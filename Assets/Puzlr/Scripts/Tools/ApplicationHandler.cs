@@ -12,7 +12,7 @@ public class ApplicationHandler : MonoBehaviour
     {
         Loader = this;
     }
-    public void LoadScene(string sceneTitle)
+    public static void LoadScene(string sceneTitle)
     {
         SceneManager.LoadScene(sceneTitle);
     }

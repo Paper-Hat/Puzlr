@@ -11,10 +11,11 @@ using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
-    
+    public static GameManager _instance;
     public static PuzlBoard Board;
     public static BoardDisplayHandler DisplayHandler;
     public static ScoreHandler Score;
+    public static PopupHandler Popups;
     [Header("GameType Agnostic Settings")] 
     public float GameStartDelay = 5f;
     [SerializeField] [Range(10, 16)] private int xDimensions;
@@ -23,7 +24,7 @@ public class GameManager : MonoBehaviour
     public int defaultRowFillCount = 3;
     [Range(3, 5)] public int MatchRequirement = 3;
 
-    public static GameManager _instance;
+    
     public static GameType GameMode = GameType.Default;
 
     [Header("Default Game Settings")] 
@@ -42,7 +43,7 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         _instance = this;
-        DontDestroyOnLoad(this.gameObject);
+        DontDestroyOnLoad(gameObject);
     }
     
 #if UNITY_EDITOR
@@ -111,7 +112,7 @@ public class GameManager : MonoBehaviour
                     Debug.LogError("Attempted to start game with no eligible game mode selected.");
                     break;
             }
-
+            
             yield return null;
         }
     }
@@ -120,9 +121,9 @@ public class GameManager : MonoBehaviour
     {
         continuePlaying = false;
         Debug.Log("Game over.");
-    }
-    private void FixedUpdate()
-    {
-
+        string endScore = "";
+        Popups.AddPopupToQueue(Popups["GameOver"], endScore);
+        //trigger popups at the end of the game
+        Popups.TriggerPopups();
     }
 }
