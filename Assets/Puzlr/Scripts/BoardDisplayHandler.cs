@@ -3,7 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using DG.Tweening;
+using TMPro;
 using Unity.Collections;
+using Unity.VisualScripting;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +30,7 @@ public class BoardDisplayHandler : MonoBehaviour
         
         PuzlBoard.boardUpdate += UpdateDisplay;
     }
+
 
     public void SetTileSize(int size)
     {
@@ -118,14 +122,37 @@ public class BoardDisplayHandler : MonoBehaviour
             Debug.Log("Attempted to preview when a preview was already playing.");
         }
     }
+    
+    
+    //TODO: FIX THIS MESS: tile needs to return to its original position (on where it is ORIGINALLY SET) after dropping
+    public IEnumerator DropDisplay((int, int) tilePos)
+    {
+        (int, int) posBelow = _board.GetTile(tilePos, PuzlBoard.BoardDir.Below);
+        TileDisplay tileBelow = boardDisplay[posBelow];
+        Vector3 tileLoc = boardDisplay[tilePos].transform.position;
+        yield return new WaitUntil(() => (_board[posBelow].tileValue == 0 || tileBelow.moving != null));
+        Tween dropTween = boardDisplay[tilePos].transform.DOMoveY(tileLoc.y - TileSize, _board.DropDelay, true);
+        yield return dropTween.WaitForCompletion();
+        dropTween = null;
+        //yield return new WaitUntil(() => _board[tilePos].tileValue == 0);
+        boardDisplay[tilePos].transform.position = boardDisplay[tilePos].InitialPos;
+    }
     private void LateUpdate()
     {
         if(_board != null && _board.GetFallingTiles().Any()) {
-            foreach (var tilePos in _board.GetFallingTiles()) {
-                _board[tilePos].tileDrop ??= StartCoroutine(_board.DropTile(tilePos));
+            foreach (var tilePos in _board.GetFallingTiles())
+            {
+                if (_board[tilePos].tileDrop == null && _board.ValidDrop(tilePos)) {
+                    boardDisplay[tilePos].moving = StartCoroutine(DropDisplay(tilePos));
+                    _board[tilePos].tileDrop = StartCoroutine(_board.DropTile(tilePos));
+                    
+                }
             }
         }
     }
 
-    
+    private void OnDisable()
+    {
+        PuzlBoard.boardUpdate -= UpdateDisplay;
+    }
 }

@@ -27,4 +27,9 @@ public class ScoreDisplay : MonoBehaviour
     {
         playerScoreText.text = ""+GameManager.Score.Score;
     }
+
+    private void OnDisable()
+    {
+        GameManager.Score.scoreUpdated -= UpdatePlayerScoreText;
+    }
 }

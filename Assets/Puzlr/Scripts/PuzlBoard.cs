@@ -5,12 +5,11 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: game start timer/popup handler, animated tile dropping
-//TODO: Game over menu, quit to main menu/sceneload
-//TODO: Tile highlighting/arrows on swap
+//TODO: Tile highlighting/arrows on swap, horizontal tile animation
 //TODO: Settings menu, "Special" gametypes (speed, endless)
 public class PuzlBoard
 {
+    #region Indexers
     public Tile this[int x, int y]{
         get{
             return board[(x, y)];
@@ -27,22 +26,22 @@ public class PuzlBoard
             board[(coord.Item1, coord.Item2)] = value;
         }
     }
-
+    #endregion
     public int boardRows, boardColumns;
     public int TilesRequiredToMatch = 3;
     public float DropDelay = 1f;
-    private bool CanMatchVertical = false;
+    //private bool CanMatchVertical = false;
     private Dictionary<(int, int), Tile> board;
+    #region Delegates_and_Events
     public delegate void OnTileSwap(List<(int, int)> tilesSwapped);
     public delegate void OnFoundMatches(List<(int, int)> matchingCoords);
     public delegate void OnBoardUpdated(List<(int, int)> tilePos);
+    public delegate void OnBoardOverflow(EventArgs e);
     public static event OnBoardUpdated boardUpdate;
     public static event OnTileSwap tilesSwapped;
     public static event OnFoundMatches foundMatches;
-
-    public delegate void OnBoardOverflow(EventArgs e);
-
     public static event OnBoardOverflow boardOverflow;
+    #endregion
     
     public PuzlBoard(int rows, int columns)
     {
@@ -52,7 +51,7 @@ public class PuzlBoard
         foundMatches += SetFallingTiles;
         tilesSwapped += SetFallingTiles;
     }
-    
+    #region Board_Setting
     void InitBoard(int rows, int cols)
     {
         board = new Dictionary<(int, int), Tile>();
@@ -84,7 +83,8 @@ public class PuzlBoard
         }
         boardUpdate?.Invoke(filledPositions);
     }
-
+    #endregion
+    #region Tile_Movement
     //swaps tiles at two given coordinates
     //swap rules: 
     //  cannot swap moving tiles
@@ -132,12 +132,6 @@ public class PuzlBoard
     {
         yield return new WaitForSeconds(DropDelay);
         (int x, int y) newPos = GetTile(tilePos, BoardDir.Below);
-        //update and handle edge case where a tile is left "moving" when a tile exists under it
-        if (board[newPos].tileValue > 0 && !board[newPos].moving) {
-            board[tilePos].moving = false;
-            board[tilePos].tileDrop = null;
-            yield break;
-        }
         yield return new WaitUntil(() => board[newPos].tileValue == 0);
         //once we've swapped, now we handle the flags
         //empty tile is not moving, but is resolving if there's another tile above it
@@ -145,18 +139,38 @@ public class PuzlBoard
         board[tilePos].resolving =  (tilePos.x == boardRows - 1 || board[GetTile(tilePos, BoardDir.Above)].tileValue > 0);
         //tile we swapped into is no longer resolving, but continues to move if tile below is empty
         board[newPos].resolving = false;
-        board[newPos].moving = (newPos.x - 1 >= 0) && (board[GetTile(newPos, BoardDir.Below)].tileValue == 0 || board[GetTile(newPos, BoardDir.Below)].moving);
+        board[newPos].moving = ValidDrop(newPos);//(newPos.x - 1 >= 0) && (board[GetTile(newPos, BoardDir.Below)].tileValue == 0 || board[GetTile(newPos, BoardDir.Below)].moving);
         SwapTiles(tilePos, newPos, true);
         //if tile hits a spot where it's no longer moving, see if there are any matches
-        if (!board[newPos].moving)
+        /*if (!board[newPos].moving)
         {
-            yield return new WaitForSeconds(DropDelay*0.75f);
+            //yield return new WaitForSeconds(DropDelay*0.75f);
             ResolveMatches(newPos, (-1, -1));
-        }
+        }*/
 
         board[tilePos].tileDrop = null;
     }
 
+    public bool ValidDrop((int x, int y) from)
+    {
+        (int x, int y) to = GetTile(from, BoardDir.Below);
+        if (to == (-1, -1))
+            return false;
+        if (board[to].tileValue > 0 && !board[to].moving) {
+            board[from].moving = false;
+            board[from].tileDrop = null;
+            return false;
+        }
+        else if (board[to].tileValue > 0 && board[to].moving)
+        {
+            return true;
+        }
+        else if (board[to].tileValue == 0)
+            return true;
+
+        return false;
+    }
+    #endregion
     #region Tile_Matching
     //checks rows and columns of swapped tiles for matches
     //our match checks assume that tiles can only be swapped horizontally
@@ -331,6 +345,11 @@ public class PuzlBoard
         Left, Right, Above, Below
     }
 
+    public void UnsubscribeListeners()
+    {
+        foundMatches -= SetFallingTiles;
+        tilesSwapped -= SetFallingTiles;
+    }
     public (int, int) GetTile((int x, int y) tilePos, BoardDir direction)
     {
         switch (direction)
@@ -338,7 +357,7 @@ public class PuzlBoard
             case BoardDir.Above:
             {
                 if (tilePos.x + 1 >= boardRows) {
-                    Debug.LogError("Tile out of bounds: " + (tilePos.x + 1, tilePos.y));
+                    //Debug.LogError("Tile out of bounds: " + (tilePos.x + 1, tilePos.y));
                     return (-1, -1);
                 }
                 return (tilePos.x + 1, tilePos.y);
@@ -347,7 +366,7 @@ public class PuzlBoard
             case BoardDir.Below:
             {
                 if (tilePos.x - 1 < 0) {
-                    Debug.LogError("Tile out of bounds: " + (tilePos.x - 1, tilePos.y));
+                    //Debug.LogError("Tile out of bounds: " + (tilePos.x - 1, tilePos.y));
                     return (-1, -1);
                 }
                 return (tilePos.x - 1, tilePos.y);
@@ -355,7 +374,7 @@ public class PuzlBoard
             case BoardDir.Left:
             {
                 if (tilePos.y + 1 >= boardColumns) {
-                    Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y + 1));
+                    //Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y + 1));
                     //newPos = null;
                     return (-1, -1);
                 }
@@ -365,7 +384,7 @@ public class PuzlBoard
             case BoardDir.Right:
             {
                 if (tilePos.y - 1 < 0) {
-                    Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y));
+                    //Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y));
                     //newPos = null;
                     return (-1, -1);
                 }

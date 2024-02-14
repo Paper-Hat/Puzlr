@@ -4,12 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 public class PopupDisplay : MonoBehaviour
 {
 
-    private TextMeshProUGUI headerText;
-    private TextMeshProUGUI bodyText;
+    [SerializeField] private TextMeshProUGUI headerText;
+    [SerializeField] private TextMeshProUGUI bodyText;
     private List<ButtonInfo> buttonInfo;
     //currently unused, tbd whether will move into an unlock system
     private List<Image> unlocks;
@@ -18,11 +19,9 @@ public class PopupDisplay : MonoBehaviour
     //we'll reuse the same popup object instead of creating duplicates
     //will also just turn off the object instead of deleting/instantiating it
     [SerializeField] private GameObject popupRoot;
-    private PopupHandler ph;
     private void Awake()
     {
         DontDestroyOnLoad(this);
-        ph = PopupHandler._instance;
     }
 
     private void Start()
@@ -32,7 +31,7 @@ public class PopupDisplay : MonoBehaviour
 
     public void Popup()
     {
-        SetPopupInfo(ph.PopupsToDisplay.Dequeue());
+        SetPopupInfo(PopupHandler._instance.PopupsToDisplay.Dequeue());
         ConfigureButtons();
         popupRoot.SetActive(true);
     }
@@ -67,11 +66,16 @@ public class PopupDisplay : MonoBehaviour
         {
             int iterVal = i;
             SetButtonText(displayButtons[i], buttonInfo[i].buttonText);
-            displayButtons[i].onClick.AddListener(() => ApplicationHandler.LoadScene(buttonInfo[iterVal].sceneToLoad));
             displayButtons[i].gameObject.SetActive(true);
+            displayButtons[i].onClick.AddListener(()=>LoadSceneFromButton(buttonInfo[iterVal]));
+            
         }
     }
 
+    void LoadSceneFromButton(ButtonInfo bi)
+    {
+        ApplicationHandler.LoadScene(bi.sceneToLoad);
+    }
     void SetButtonText(Button b, string text)
     {
         TextMeshProUGUI buttonText = b.GetComponentInChildren<TextMeshProUGUI>();
@@ -91,7 +95,7 @@ public class PopupDisplay : MonoBehaviour
         ResetButtons();
         popupRoot.SetActive(false);
         //if we have more queued popups, display the next one
-        if (ph.PopupsToDisplay.Any()) {
+        if (PopupHandler._instance.PopupsToDisplay.Any()) {
             Popup();
         }
     }

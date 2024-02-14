@@ -12,7 +12,8 @@ public class TileDisplay : MonoBehaviour
     [SerializeField] private Image tileImage;
     [ReadOnly(true)] private (int x, int y) tilePos; //column pos, row pos
     [SerializeField] private Rect worldRect;
-    
+    public Vector3 InitialPos;
+    public Coroutine moving;
     void Awake()
     {
         Controls.OnDragged += SwapTile;
@@ -43,6 +44,7 @@ public class TileDisplay : MonoBehaviour
     public void SetPos((int x, int y) pos)
     {
         tilePos = pos;
+        InitialPos = transform.localPosition;
     }
 
     private void ConfigureWorldRect(Vector3 position)
@@ -108,5 +110,8 @@ public class TileDisplay : MonoBehaviour
         Handles.Label(worldRect.center, ""+tilePos);
     }
     #endif
-    
+    private void OnDisable()
+    {
+        Controls.OnDragged -= SwapTile;
+    }
 }

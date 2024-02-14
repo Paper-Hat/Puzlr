@@ -13,8 +13,10 @@ public class PopupHandler : MonoBehaviour
     void Awake()
     {
         _instance = this;
+        PopupsToDisplay = new Queue<PopupInfo>();
         display = GameObject.Find("PopupDisplay").GetComponent<PopupDisplay>();
         SceneManager.sceneLoaded += ClearOnTransition;
+        
         ConfigureAvailablePopups();
     }
 
@@ -54,9 +56,14 @@ public class PopupHandler : MonoBehaviour
         Object[] popupObjs = Resources.LoadAll("Popups", typeof(ScriptableObject));
         foreach (var obj in popupObjs) {
             PopupInfo info = (PopupInfo)obj;
-            popups.Add(info.headerText, info);
+            popups.Add(info.headerText.Replace(" ", string.Empty), info);
         }
-        Debug.Log("Loaded " + popups.Count + " popups.");
+        /*#if UNITY_EDITOR
+        Debug.Log("Loaded " + popups.Count + " popups: ");
+        foreach (PopupInfo popup in popups.Values) {
+            Debug.Log(popup.headerText.Replace(" ", string.Empty));
+        }
+        #endif*/        
     }
     
     //popup types:

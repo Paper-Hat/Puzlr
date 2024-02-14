@@ -1,11 +1,6 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.Serialization;
-using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 
@@ -15,9 +10,11 @@ public class GameManager : MonoBehaviour
     public static PuzlBoard Board;
     public static BoardDisplayHandler DisplayHandler;
     public static ScoreHandler Score;
-    public static PopupHandler Popups;
+
     [Header("GameType Agnostic Settings")] 
     public float GameStartDelay = 5f;
+    public CountdownTimer gameStartTimer;
+    
     [SerializeField] [Range(10, 16)] private int xDimensions;
     [SerializeField] [Range(6, 12)] private int yDimensions;
     [Range(4, 7)] public int distinctTiles = 4;
@@ -43,17 +40,20 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         _instance = this;
-        DontDestroyOnLoad(gameObject);
     }
     
 #if UNITY_EDITOR
     [Header("Test Scene")] 
     [SerializeField] private GameType testGameType;
-    [SerializeField] private bool fromStartMenu;
+    [SerializeField] private bool tester;
     private void Start()
     {
-        if(!fromStartMenu)
+        if (tester)
+        {
             StartGame(testGameType);
+            return;
+        }
+        StartGame(GameMode);
     }
 #endif
     public void StartGame(GameType selectedGameType)
@@ -61,6 +61,7 @@ public class GameManager : MonoBehaviour
         SetupGame(selectedGameType);
         GameLoop = StartCoroutine(PlayGame(GameMode));
     }
+    
 
     private void SetupGame(GameType mode)
     {
@@ -89,7 +90,8 @@ public class GameManager : MonoBehaviour
     public IEnumerator PlayGame(GameType gameMode)
     {
         yield return new WaitUntil(() => _setup_complete);
-        yield return new WaitForSeconds(GameStartDelay);
+        gameStartTimer.StartTimer(GameStartDelay);
+        yield return new WaitUntil(() => !gameStartTimer.IsCounting());
         while (continuePlaying) {
             switch (gameMode)
             {
@@ -122,8 +124,9 @@ public class GameManager : MonoBehaviour
         continuePlaying = false;
         Debug.Log("Game over.");
         string endScore = "";
-        Popups.AddPopupToQueue(Popups["GameOver"], endScore);
+        Board.UnsubscribeListeners();
+        PopupHandler._instance.AddPopupToQueue(PopupHandler._instance["GameOver"], endScore);
         //trigger popups at the end of the game
-        Popups.TriggerPopups();
+        PopupHandler._instance.TriggerPopups();
     }
 }
