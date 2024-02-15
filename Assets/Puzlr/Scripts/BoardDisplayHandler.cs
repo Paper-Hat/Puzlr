@@ -27,8 +27,6 @@ public class BoardDisplayHandler : MonoBehaviour
     void Awake()
     {
         DisplayHandler = this;
-        
-        _board.boardUpdate += UpdateDisplay;
     }
 
 
@@ -39,6 +37,7 @@ public class BoardDisplayHandler : MonoBehaviour
     public void SetBoardRef(PuzlBoard board)
     {
         _board = board;
+        _board.boardUpdate += UpdateDisplay;
     }
     //set width and height of canvas dependant on board size
     //let's assume cell size is always 64x64 squares

@@ -29,13 +29,14 @@ public class TileDisplay : MonoBehaviour
     private IEnumerator WaitForFrame()
     {
         yield return new WaitForEndOfFrame();
-        Invoke("SetInitialPos", 0.01f);
+        Invoke("SetInitialValues", 0.01f);
     }
     
-    public void SetInitialPos()
+    //rect values do not update until the end of the first frame due to parent layoutgroup, so we set values here
+    public void SetInitialValues()
     {
         initialPos = transform.position;
-        Debug.Log(initialPos);
+        ConfigureWorldRect(transform.position);
     }
 
     public Vector3 GetInitialPos()
@@ -81,7 +82,6 @@ public class TileDisplay : MonoBehaviour
     //if the drag started within the bounds of our display, then attempt to swap the tile based on direction of the swipe
     void SwapTile(((int, int), (int, int)) dragVal)
     {
-        ConfigureWorldRect(transform.position);
         Controls.Direction dir = Controls.GetCardinalDirectionFromDrag(dragVal);
         Tile thisTile = GameManager.Board[tilePos];
         //did we hit this tile, is it a swappable tile type, is it falling, or is it resolving?
