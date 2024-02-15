@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using DG.Tweening;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
@@ -12,13 +13,35 @@ public class TileDisplay : MonoBehaviour
     [SerializeField] private Image tileImage;
     [ReadOnly(true)] private (int x, int y) tilePos; //column pos, row pos
     [SerializeField] private Rect worldRect;
-    public Vector3 InitialPos;
+    private Vector3 initialPos;
     public Coroutine moving;
+    public Tween dropTween;
     void Awake()
     {
         Controls.OnDragged += SwapTile;
     }
+
+    private void Start()
+    {
+        StartCoroutine(WaitForFrame());
+    }
+
+    private IEnumerator WaitForFrame()
+    {
+        yield return new WaitForEndOfFrame();
+        Invoke("SetInitialPos", 0.01f);
+    }
     
+    public void SetInitialPos()
+    {
+        initialPos = transform.position;
+        Debug.Log(initialPos);
+    }
+
+    public Vector3 GetInitialPos()
+    {
+        return initialPos;
+    }
     public void ConfigureImage(Color tileColor)
     {
         if (tileColor.a == 0f)
@@ -44,7 +67,6 @@ public class TileDisplay : MonoBehaviour
     public void SetPos((int x, int y) pos)
     {
         tilePos = pos;
-        InitialPos = transform.localPosition;
     }
 
     private void ConfigureWorldRect(Vector3 position)
@@ -60,6 +82,7 @@ public class TileDisplay : MonoBehaviour
     void SwapTile(((int, int), (int, int)) dragVal)
     {
         ConfigureWorldRect(transform.position);
+        Controls.Direction dir = Controls.GetCardinalDirectionFromDrag(dragVal);
         Tile thisTile = GameManager.Board[tilePos];
         //did we hit this tile, is it a swappable tile type, is it falling, or is it resolving?
         if (!worldRect.Contains(new Vector2(dragVal.Item2.Item1, dragVal.Item2.Item2), true)
@@ -68,7 +91,7 @@ public class TileDisplay : MonoBehaviour
             return;
         }
         
-        Controls.Direction dir = Controls.GetCardinalDirectionFromDrag(dragVal);
+        
         if (Controls.HorizontalSwapsOnly)
         {
             switch (dir) {

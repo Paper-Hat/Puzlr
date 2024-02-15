@@ -27,6 +27,7 @@ public class PuzlBoard
         }
     }
     #endregion
+
     public int boardRows, boardColumns;
     public int TilesRequiredToMatch = 3;
     public float DropDelay = 1f;
@@ -37,10 +38,10 @@ public class PuzlBoard
     public delegate void OnFoundMatches(List<(int, int)> matchingCoords);
     public delegate void OnBoardUpdated(List<(int, int)> tilePos);
     public delegate void OnBoardOverflow(EventArgs e);
-    public static event OnBoardUpdated boardUpdate;
-    public static event OnTileSwap tilesSwapped;
-    public static event OnFoundMatches foundMatches;
-    public static event OnBoardOverflow boardOverflow;
+    public event OnBoardUpdated boardUpdate;
+    public event OnTileSwap tilesSwapped;
+    public event OnFoundMatches foundMatches;
+    public event OnBoardOverflow boardOverflow;
     #endregion
     
     public PuzlBoard(int rows, int columns)
@@ -105,6 +106,12 @@ public class PuzlBoard
                 Debug.Log("Attempted to swap with a special tile");
                 return false;
             }
+
+            if (board[a].resolving || board[b].resolving)
+            {
+                Debug.Log("Can't swap while a tile is resolving");
+                return false;
+            }
             //Debug.Log("Succeeded in swapping.");
             //Swap tiles via deconstruction
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
@@ -130,45 +137,36 @@ public class PuzlBoard
     //We should only call this on tiles flagged for moving
     public IEnumerator DropTile((int x, int y) tilePos)
     {
-        yield return new WaitForSeconds(DropDelay);
+        
+        //yield return new WaitForSeconds(DropDelay);
         (int x, int y) newPos = GetTile(tilePos, BoardDir.Below);
         yield return new WaitUntil(() => board[newPos].tileValue == 0);
         //once we've swapped, now we handle the flags
         //empty tile is not moving, but is resolving if there's another tile above it
         board[tilePos].moving = false;
-        board[tilePos].resolving =  (tilePos.x == boardRows - 1 || board[GetTile(tilePos, BoardDir.Above)].tileValue > 0);
+        //board[tilePos].resolving =  (tilePos.x == boardRows - 1 || board[GetTile(tilePos, BoardDir.Above)].tileValue > 0);
         //tile we swapped into is no longer resolving, but continues to move if tile below is empty
         board[newPos].resolving = false;
-        board[newPos].moving = ValidDrop(newPos);//(newPos.x - 1 >= 0) && (board[GetTile(newPos, BoardDir.Below)].tileValue == 0 || board[GetTile(newPos, BoardDir.Below)].moving);
+        board[newPos].moving = ValidDrop(newPos);
         SwapTiles(tilePos, newPos, true);
-        //if tile hits a spot where it's no longer moving, see if there are any matches
-        /*if (!board[newPos].moving)
-        {
-            //yield return new WaitForSeconds(DropDelay*0.75f);
-            ResolveMatches(newPos, (-1, -1));
-        }*/
-
         board[tilePos].tileDrop = null;
     }
 
     public bool ValidDrop((int x, int y) from)
     {
         (int x, int y) to = GetTile(from, BoardDir.Below);
+        //if it's an invalid tile/direction
         if (to == (-1, -1))
             return false;
+        //if the tile directly below is solid and not moving
         if (board[to].tileValue > 0 && !board[to].moving) {
-            board[from].moving = false;
-            board[from].tileDrop = null;
             return false;
         }
-        else if (board[to].tileValue > 0 && board[to].moving)
-        {
-            return true;
-        }
-        else if (board[to].tileValue == 0)
-            return true;
-
-        return false;
+        //if the tile value itself is invalid
+        else if (board[to].tileValue < 0)
+            return false;
+        //the tile must be either zero or greater than zero AND moving
+        return true;
     }
     #endregion
     #region Tile_Matching
@@ -404,8 +402,8 @@ public class PuzlBoard
 
     public List<(int, int)> GetFallingTiles()
     {
-        List<(int, int)> fallingTiles = board.Keys.Where(x => board[x].moving).ToList();
-        return fallingTiles.ToList();
+        List<(int, int)> fallingTiles = board.Keys.Where(x => board[x].moving).Distinct().ToList();
+        return fallingTiles;
     }
     //Picks a random tile location
     public (int, int) RandomTile(bool fromTop)

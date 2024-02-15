@@ -33,12 +33,17 @@ public class ScoreHandler
 
     [SerializeField] private int excessMatchMultiplier = 3;
 
+    private PuzlBoard boardRef;
     public ScoreHandler()
     {
         playerScore = 0;
-        PuzlBoard.foundMatches += UpdateScoreWithMatches;
     }
 
+    public void SetBoardRef(PuzlBoard board)
+    {
+        boardRef = board;
+        boardRef.foundMatches += UpdateScoreWithMatches;
+    }
     public void ResetScore()
     {
         playerScore = 0;
@@ -88,5 +93,10 @@ public class ScoreHandler
     {
         return numTotalMatches;
     }
-    
+
+    public void UnsubscribeListeners()
+    {
+        boardRef.foundMatches -= UpdateScoreWithMatches;
+    }
+
 }

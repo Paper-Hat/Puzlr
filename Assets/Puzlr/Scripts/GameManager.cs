@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour
                     DisplayHandler.CreateDisplay();
                     Board.TilesRequiredToMatch = MatchRequirement;
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
-                    PuzlBoard.boardOverflow += GameOver;
+                    Board.boardOverflow += GameOver;
                     break;
                 case GameType.Special:
                     break;
@@ -125,6 +125,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game over.");
         string endScore = "";
         Board.UnsubscribeListeners();
+        Score.UnsubscribeListeners();
         PopupHandler._instance.AddPopupToQueue(PopupHandler._instance["GameOver"], endScore);
         //trigger popups at the end of the game
         PopupHandler._instance.TriggerPopups();

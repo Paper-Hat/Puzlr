@@ -28,7 +28,7 @@ public class BoardDisplayHandler : MonoBehaviour
     {
         DisplayHandler = this;
         
-        PuzlBoard.boardUpdate += UpdateDisplay;
+        _board.boardUpdate += UpdateDisplay;
     }
 
 
@@ -123,29 +123,37 @@ public class BoardDisplayHandler : MonoBehaviour
         }
     }
     
-    
-    //TODO: FIX THIS MESS: tile needs to return to its original position (on where it is ORIGINALLY SET) after dropping
-    public IEnumerator DropDisplay((int, int) tilePos)
+    private IEnumerator MoveDisplay((int, int) tilePos)
     {
         (int, int) posBelow = _board.GetTile(tilePos, PuzlBoard.BoardDir.Below);
+        TileDisplay tileToDrop = boardDisplay[tilePos];
         TileDisplay tileBelow = boardDisplay[posBelow];
-        Vector3 tileLoc = boardDisplay[tilePos].transform.position;
-        yield return new WaitUntil(() => (_board[posBelow].tileValue == 0 || tileBelow.moving != null));
-        Tween dropTween = boardDisplay[tilePos].transform.DOMoveY(tileLoc.y - TileSize, _board.DropDelay, true);
-        yield return dropTween.WaitForCompletion();
-        dropTween = null;
-        //yield return new WaitUntil(() => _board[tilePos].tileValue == 0);
-        boardDisplay[tilePos].transform.position = boardDisplay[tilePos].InitialPos;
+        Vector3 initialPos = tileToDrop.GetInitialPos();
+        
+        //if the tile below us is solid, it should move, so we wait
+        if (_board[posBelow].tileValue > 0) {
+            yield return new WaitUntil(() => tileBelow.dropTween != null);
+        }
+        //don't allow swapping into tile positions that we're dropping into, or moving tiles for that matter
+        _board[posBelow].resolving = true;
+        
+        //wait for "animation" to end before dropping the tile in data
+        boardDisplay[tilePos].dropTween = boardDisplay[tilePos].transform.DOMoveY(initialPos.y - TileSize, _board.DropDelay, true);
+        yield return boardDisplay[tilePos].dropTween.WaitForCompletion();
+        _board[tilePos].tileDrop = StartCoroutine(_board.DropTile(tilePos));
+        yield return new WaitUntil(() => _board[tilePos].tileDrop == null);
+        
+        //once tile is dropped in data, refresh the tile's position and end the coroutine
+        boardDisplay[tilePos].transform.position = initialPos;
+        tileToDrop.moving = null;
     }
     private void LateUpdate()
     {
         if(_board != null && _board.GetFallingTiles().Any()) {
-            foreach (var tilePos in _board.GetFallingTiles())
-            {
-                if (_board[tilePos].tileDrop == null && _board.ValidDrop(tilePos)) {
-                    boardDisplay[tilePos].moving = StartCoroutine(DropDisplay(tilePos));
-                    _board[tilePos].tileDrop = StartCoroutine(_board.DropTile(tilePos));
-                    
+            foreach (var tilePos in _board.GetFallingTiles()) {
+                //drop the tile if it isn't already
+                if (_board[tilePos].tileDrop == null && boardDisplay[tilePos].moving == null) {
+                    boardDisplay[tilePos].moving = StartCoroutine(MoveDisplay(tilePos));
                 }
             }
         }
@@ -153,6 +161,6 @@ public class BoardDisplayHandler : MonoBehaviour
 
     private void OnDisable()
     {
-        PuzlBoard.boardUpdate -= UpdateDisplay;
+        _board.boardUpdate -= UpdateDisplay;
     }
 }
