@@ -8,7 +8,7 @@ using UnityEngine;
 //2) Total number of matched tiles
 //3) Number of overall matches
 //4) Number of matched tiles above 3 in a given match
-public class ScoreHandler
+public class ScoreHandler : IPuzlGameComponent
 {
     public delegate void OnPointsGained(); 
     public event OnPointsGained pointsGained;
@@ -32,17 +32,18 @@ public class ScoreHandler
     private int matchedTileMultiplier = 1;
 
     [SerializeField] private int excessMatchMultiplier = 3;
-
-    private PuzlBoard boardRef;
+    
     public ScoreHandler()
     {
         playerScore = 0;
     }
 
+    public PuzlBoard Board { get; set; }
+
     public void SetBoardRef(PuzlBoard board)
     {
-        boardRef = board;
-        boardRef.foundMatches += UpdateScoreWithMatches;
+        Board = board;
+        Board.foundMatches += UpdateScoreWithMatches;
     }
     public void ResetScore()
     {
@@ -56,8 +57,8 @@ public class ScoreHandler
         //we further add to this if the match requirement exceeds the base
         //Debug.Log(matches.Count);
         playerScore += (matches.Count 
-            * (int)(10 - GameManager.Board.DropDelay) 
-            + (excessMatchMultiplier * (GameManager.Board.TilesRequiredToMatch - 3)));
+            * (int)(10 - Board.DropDelay) 
+            + (excessMatchMultiplier * (Board.TilesRequiredToMatch - 3)));
         
         pointsGained?.Invoke();
         numMatchedTiles += matches.Count;
@@ -96,7 +97,7 @@ public class ScoreHandler
 
     public void UnsubscribeListeners()
     {
-        boardRef.foundMatches -= UpdateScoreWithMatches;
+        Board.foundMatches -= UpdateScoreWithMatches;
     }
 
 }

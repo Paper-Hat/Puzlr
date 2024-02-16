@@ -11,7 +11,7 @@ using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class BoardDisplayHandler : MonoBehaviour
+public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
 {
     private Dictionary<(int, int), TileDisplay> boardDisplay;
     [SerializeField] [ReadOnly] private List<TilePreview> previewObjects;
@@ -23,7 +23,6 @@ public class BoardDisplayHandler : MonoBehaviour
     public static int TileSize = 64;
     public List<Color> tileColors;
     public static BoardDisplayHandler DisplayHandler;
-    private PuzlBoard _board;
     void Awake()
     {
         DisplayHandler = this;
@@ -34,19 +33,22 @@ public class BoardDisplayHandler : MonoBehaviour
     {
         TileSize = size;
     }
+
+    public PuzlBoard Board { get; set; }
+
     public void SetBoardRef(PuzlBoard board)
     {
-        _board = board;
-        _board.boardUpdate += UpdateDisplay;
+        Board = board;
+        Board.boardUpdate += UpdateDisplay;
     }
     //set width and height of canvas dependant on board size
     //let's assume cell size is always 64x64 squares
     public void CreateDisplay()
     {
         boardDisplay = new();
-        boardViewport.sizeDelta = new Vector2(_board.boardColumns * TileSize, _board.boardRows * TileSize);
-        boardContentRoot.sizeDelta = new Vector2(_board.boardColumns * TileSize, _board.boardRows * TileSize);
-        Vector2 rowSize = new Vector2(_board.boardColumns * TileSize, TileSize);
+        boardViewport.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
+        boardContentRoot.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
+        Vector2 rowSize = new Vector2(Board.boardColumns * TileSize, TileSize);
         ConfigureBoard(rowSize);
         ConfigurePreviews(rowSize);
     }
@@ -55,7 +57,7 @@ public class BoardDisplayHandler : MonoBehaviour
     {
         
         //create playable game board
-        for (int i = 0; i < _board.boardRows; i++) {
+        for (int i = 0; i < Board.boardRows; i++) {
             
             //create row object
             GameObject rowObj = Instantiate(gameRowPrefab, boardContentRoot);
@@ -65,10 +67,11 @@ public class BoardDisplayHandler : MonoBehaviour
             rowRect.sizeDelta = rowSize;
             
             //create display cells within each row
-            for (int j = 0; j < _board.boardColumns; j++)
+            for (int j = 0; j < Board.boardColumns; j++)
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rowRect);
                 TileDisplay display = Instantiate(tilePrefab, rowObj.transform).GetComponent<TileDisplay>();
+                display.SetBoardRef(Board);
                 display.SetDisplaySize(TileSize);
                 display.SetPos((i, j));
                 boardDisplay.Add((i, j), display);
@@ -94,9 +97,10 @@ public class BoardDisplayHandler : MonoBehaviour
 #if UNITY_EDITOR
         previewerRowObj.name = "Previewers";
 #endif
-        for (int i = 0; i < _board.boardColumns; i++)
+        for (int i = 0; i < Board.boardColumns; i++)
         {
             TilePreview previewer = Instantiate(previewerPrefab, previewerRowObj.transform).GetComponent<TilePreview>();
+            previewer.SetBoardRef(Board);
             RectTransform previewerObjRect= (RectTransform)previewer.transform;
             previewerObjRect.sizeDelta = new Vector2(TileSize, TileSize);
             previewObjects.Add(previewer);
@@ -104,9 +108,8 @@ public class BoardDisplayHandler : MonoBehaviour
     }
     void UpdateDisplay(List<(int, int)> tilePos)
     {
-        PuzlBoard board = GameManager.Board;
         foreach (var pos in tilePos) {
-            Tile gameTile = board[(pos)];
+            Tile gameTile = Board[(pos)];
             TileDisplay td = boardDisplay[(pos)];
             td.ConfigureImage(tileColors[gameTile.tileValue]);
         }
@@ -124,23 +127,23 @@ public class BoardDisplayHandler : MonoBehaviour
     
     private IEnumerator MoveDisplay((int, int) tilePos)
     {
-        (int, int) posBelow = _board.GetTile(tilePos, PuzlBoard.BoardDir.Below);
+        (int, int) posBelow = Board.GetTile(tilePos, PuzlBoard.BoardDir.Below);
         TileDisplay tileToDrop = boardDisplay[tilePos];
         TileDisplay tileBelow = boardDisplay[posBelow];
         Vector3 initialPos = tileToDrop.GetInitialPos();
         
         //if the tile below us is solid, it should move, so we wait
-        if (_board[posBelow].tileValue > 0) {
+        if (Board[posBelow].tileValue > 0) {
             yield return new WaitUntil(() => tileBelow.dropTween != null);
         }
         //don't allow swapping into tile positions that we're dropping into, or moving tiles for that matter
-        _board[posBelow].resolving = true;
+        Board[posBelow].resolving = true;
         
         //wait for "animation" to end before dropping the tile in data
-        boardDisplay[tilePos].dropTween = boardDisplay[tilePos].transform.DOMoveY(initialPos.y - TileSize, _board.DropDelay, true);
+        boardDisplay[tilePos].dropTween = boardDisplay[tilePos].transform.DOMoveY(initialPos.y - TileSize, Board.DropDelay, true);
         yield return boardDisplay[tilePos].dropTween.WaitForCompletion();
-        _board[tilePos].tileDrop = StartCoroutine(_board.DropTile(tilePos));
-        yield return new WaitUntil(() => _board[tilePos].tileDrop == null);
+        Board[tilePos].tileDrop = StartCoroutine(Board.DropTile(tilePos));
+        yield return new WaitUntil(() => Board[tilePos].tileDrop == null);
         
         //once tile is dropped in data, refresh the tile's position and end the coroutine
         boardDisplay[tilePos].transform.position = initialPos;
@@ -148,10 +151,10 @@ public class BoardDisplayHandler : MonoBehaviour
     }
     private void LateUpdate()
     {
-        if(_board != null && _board.GetFallingTiles().Any()) {
-            foreach (var tilePos in _board.GetFallingTiles()) {
+        if(Board != null && Board.GetFallingTiles().Any()) {
+            foreach (var tilePos in Board.GetFallingTiles()) {
                 //drop the tile if it isn't already
-                if (_board[tilePos].tileDrop == null && boardDisplay[tilePos].moving == null) {
+                if (Board[tilePos].tileDrop == null && boardDisplay[tilePos].moving == null) {
                     boardDisplay[tilePos].moving = StartCoroutine(MoveDisplay(tilePos));
                 }
             }
@@ -160,6 +163,6 @@ public class BoardDisplayHandler : MonoBehaviour
 
     private void OnDisable()
     {
-        _board.boardUpdate -= UpdateDisplay;
+        Board.boardUpdate -= UpdateDisplay;
     }
 }

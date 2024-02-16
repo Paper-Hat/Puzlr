@@ -7,29 +7,34 @@ using UnityEngine;
 public class ScoreDisplay : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI playerScoreText;
-
+    private ScoreHandler score;
     private void Awake()
     {
         StartCoroutine(SetupScore());
     }
 
+    public void SetScoreRef(ScoreHandler sh)
+    {
+        score = sh;
+    }
+
     private IEnumerator SetupScore()
     {
-        yield return new WaitUntil(() => GameManager.Score != null);
+        yield return new WaitUntil(() => score != null);
         
-        //TODO: Fancy +[score_value] next to player score that "vacuums" itself into score value
+        //TODO: Fancy +[score_value] animation
         //GameManager.Score.pointsGained += UpdatePlayerScoreText;
-        GameManager.Score.scoreUpdated += UpdatePlayerScoreText;
-        GameManager.Score.ResetScore();
+        score.scoreUpdated += UpdatePlayerScoreText;
+        score.ResetScore();
         yield return null;
     }
     void UpdatePlayerScoreText()
     {
-        playerScoreText.text = ""+GameManager.Score.Score;
+        playerScoreText.text = ""+score.Score;
     }
 
     private void OnDisable()
     {
-        GameManager.Score.scoreUpdated -= UpdatePlayerScoreText;
+        score.scoreUpdated -= UpdatePlayerScoreText;
     }
 }

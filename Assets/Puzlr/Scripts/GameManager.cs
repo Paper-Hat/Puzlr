@@ -1,15 +1,16 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 using Random = UnityEngine.Random;
 
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviour, IPuzlGameComponent
 {
-    public static GameManager _instance;
-    public static PuzlBoard Board;
-    public static BoardDisplayHandler DisplayHandler;
-    public static ScoreHandler Score;
+
+    public BoardDisplayHandler DisplayHandler;
+    public ScoreHandler Score;
+    public ScoreDisplay ScoreDisplay;
 
     [Header("GameType Agnostic Settings")] 
     public float GameStartDelay = 5f;
@@ -39,7 +40,7 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        _instance = this;
+        
     }
     
 #if UNITY_EDITOR
@@ -70,11 +71,17 @@ public class GameManager : MonoBehaviour
             switch (mode)
             {
                 case GameType.Default:
+                    
                     Board = new PuzlBoard(xDimensions, yDimensions);
+                    
                     Score = new ScoreHandler();
+                    Score.SetBoardRef(Board);
+                    ScoreDisplay.SetScoreRef(Score);
+                    
                     DisplayHandler = BoardDisplayHandler.DisplayHandler;
                     DisplayHandler.SetBoardRef(Board);
                     DisplayHandler.CreateDisplay();
+                    
                     Board.TilesRequiredToMatch = MatchRequirement;
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
                     Board.boardOverflow += GameOver;
@@ -130,4 +137,6 @@ public class GameManager : MonoBehaviour
         //trigger popups at the end of the game
         PopupHandler._instance.TriggerPopups();
     }
+
+    public PuzlBoard Board { get; set; }
 }

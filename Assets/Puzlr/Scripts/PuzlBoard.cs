@@ -7,6 +7,7 @@ using Random = UnityEngine.Random;
 
 //TODO: Tile highlighting/arrows on swap, horizontal tile animation
 //TODO: Settings menu, "Special" gametypes (speed, endless)
+
 public class PuzlBoard
 {
     #region Indexers
@@ -31,6 +32,8 @@ public class PuzlBoard
     public int boardRows, boardColumns;
     public int TilesRequiredToMatch = 3;
     public float DropDelay = 1f;
+    public float TimeForNewTile = 3f;
+    
     //private bool CanMatchVertical = false;
     private Dictionary<(int, int), Tile> board;
     #region Delegates_and_Events
@@ -172,6 +175,7 @@ public class PuzlBoard
     #region Tile_Matching
     //checks rows and columns of swapped tiles for matches
     //our match checks assume that tiles can only be swapped horizontally
+    //setup bool relevant when creating board to ensure no pre-selected matches
     private List<(int, int)> ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2, bool setup = false){
         List<(int, int)> allMatches = new();
         bool singleCoord = (coordinate2 == (-1, -1));
@@ -414,4 +418,14 @@ public class PuzlBoard
         return (Random.Range(0, boardRows), Random.Range(0, boardColumns));
     }
     #endregion
+}
+
+interface IPuzlGameComponent
+{
+    PuzlBoard Board { get; set; }
+
+    public void SetBoardRef(PuzlBoard board)
+    {
+        Board = board;
+    }
 }

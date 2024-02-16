@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.UI;
 [RequireComponent(typeof(Image))]
-public class TileDisplay : MonoBehaviour
+public class TileDisplay : MonoBehaviour, IPuzlGameComponent
 {
     [SerializeField] private Image tileImage;
     [ReadOnly(true)] private (int x, int y) tilePos; //column pos, row pos
@@ -83,7 +83,7 @@ public class TileDisplay : MonoBehaviour
     void SwapTile(((int, int), (int, int)) dragVal)
     {
         Controls.Direction dir = Controls.GetCardinalDirectionFromDrag(dragVal);
-        Tile thisTile = GameManager.Board[tilePos];
+        Tile thisTile = Board[tilePos];
         //did we hit this tile, is it a swappable tile type, is it falling, or is it resolving?
         if (!worldRect.Contains(new Vector2(dragVal.Item2.Item1, dragVal.Item2.Item2), true)
             || thisTile.tileValue < 0 || thisTile.resolving || thisTile.moving)
@@ -98,11 +98,11 @@ public class TileDisplay : MonoBehaviour
                 case Controls.Direction.Left:
                     if (tilePos.y - 1 < 0) return;
                     //tile on the left is always first in the swap
-                    GameManager.Board.SwapTiles((tilePos.x, tilePos.y - 1), (tilePos.x, tilePos.y));
+                    Board.SwapTiles((tilePos.x, tilePos.y - 1), tilePos);
                     break;
                 case Controls.Direction.Right:
-                    if (tilePos.y >= GameManager.Board.boardColumns) return;
-                    GameManager.Board.SwapTiles((tilePos.x, tilePos.y), (tilePos.x, tilePos.y + 1));
+                    if (tilePos.y > Board.boardColumns - 1) return;
+                    Board.SwapTiles(tilePos, (tilePos.x, tilePos.y + 1));
                     break;
                 default:
                     Debug.LogError("Should not have reached an up-down result with only horizontal swapping enabled.");
@@ -121,8 +121,8 @@ public class TileDisplay : MonoBehaviour
     [SerializeField][ReadOnly(true)] private int tileY;
     void LateUpdate()
     {
-        if(GameManager.Board != null)
-            tileInfo = GameManager.Board[tilePos];
+        if(Board != null)
+            tileInfo = Board[tilePos];
         tileX = tilePos.x;
         tileY = tilePos.y;
     }
@@ -136,5 +136,12 @@ public class TileDisplay : MonoBehaviour
     private void OnDisable()
     {
         Controls.OnDragged -= SwapTile;
+    }
+
+    public PuzlBoard Board { get; set; }
+
+    public void SetBoardRef(PuzlBoard board)
+    {
+        Board = board;
     }
 }

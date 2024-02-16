@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
-public class TilePreview : MonoBehaviour
+public class TilePreview : MonoBehaviour, IPuzlGameComponent
 {
     [SerializeField] private Image previewColor;
     public Coroutine previewerCo;
@@ -21,11 +21,18 @@ public class TilePreview : MonoBehaviour
     {
         previewColor.enabled = true;
         previewColor.color = previewTileColor;
-        Tween previewTween = previewColor.DOFillAmount(0f, GameManager._instance.timeUntilNewTileDropped);
+        Tween previewTween = previewColor.DOFillAmount(0f, Board.TimeForNewTile);
         yield return new DOTweenCYInstruction.WaitForCompletion(previewTween);
         previewColor.enabled = false;
         previewColor.fillAmount = 1f;
         previewerCo = null;
         yield return null;
+    }
+
+    public PuzlBoard Board { get; set; }
+
+    public void SetBoardRef(PuzlBoard board)
+    {
+        Board = board;
     }
 }
