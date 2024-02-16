@@ -10,8 +10,13 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public static event OnPtrClick OnPointerClicked;
     public delegate void OnPtrMove((int, int) pos);
     public static event OnPtrMove OnPointerMoved;
-    public delegate void OnPtrDrag(((int sdX, int sdY),(int edX, int edY)) dragValue);
-    public static event OnPtrDrag OnDragged;
+    public delegate void OnDragEnd(((int sdX, int sdY),(int edX, int edY)) dragValue);
+    public static event OnDragEnd OnDragEnded;
+    
+    public delegate void OnDragStart((int x, int y) dragBeginPos);
+
+    public static event OnDragStart OnDragStarted;
+    
     public static bool HorizontalSwapsOnly = true;
     public float DragThreshold = .1f;
     
@@ -46,7 +51,7 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
 
     private ((int sdX, int sdY) sDrag, (int edX, int edY) eDrag) _mDrag;
     private bool mouseDown;
-    private bool dragging;
+    public static bool Dragging;
     
 
     //update mouse when it moves, tracking mouse x, y
@@ -68,17 +73,16 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     void UpdateDrag(bool startDrag, bool endDrag)
     {
         if (startDrag) {
-            dragging = true;
+            Dragging = true;
             MouseDrag = (MousePos, (0, 0));
         }
         else if (endDrag)
         {
             MouseDrag = (MouseDrag.startDrag, MousePos);
-            
-            dragging = false;
+            Dragging = false;
         }
         else
-            dragging = true;
+            Dragging = true;
     }
     
     public static Direction GetCardinalDirectionFromDrag(((int sdX, int sdY) dragStart, (int edX, int edY) dragEnd) dragVar)
@@ -116,6 +120,7 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public void OnBeginDrag(PointerEventData eventData)
     {
         UpdateDrag(true, false);
+        OnDragStarted?.Invoke(MouseDrag.startDrag);
     } 
 
     public void OnEndDrag(PointerEventData eventData)
@@ -127,7 +132,7 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
         if (Mathf.Abs(MouseDrag.endDrag.endDragX - MouseDrag.startDrag.startDragX) <
             DragThreshold * BoardDisplayHandler.TileSize)
             return;
-        OnPtrDrag dragEvent = OnDragged;
+        OnDragEnd dragEvent = OnDragEnded;
         dragEvent?.Invoke(MouseDrag);
     }
 
