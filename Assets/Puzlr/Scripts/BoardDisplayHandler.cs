@@ -22,12 +22,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     [SerializeField] private GameObject previewerPrefab;
     public static int TileSize = 64;
     public List<Color> tileColors;
-    public static BoardDisplayHandler DisplayHandler;
-    void Awake()
-    {
-        DisplayHandler = this;
-    }
-
+    
 
     public void SetTileSize(int size)
     {
@@ -109,8 +104,8 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     void UpdateDisplay(List<(int, int)> tilePos)
     {
         foreach (var pos in tilePos) {
-            Tile gameTile = Board[(pos)];
-            TileDisplay td = boardDisplay[(pos)];
+            Tile gameTile = Board[pos];
+            TileDisplay td = boardDisplay[pos];
             td.ConfigureImage(tileColors[gameTile.tileValue]);
         }
     }

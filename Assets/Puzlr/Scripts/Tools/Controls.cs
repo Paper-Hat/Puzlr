@@ -6,14 +6,14 @@ using UnityEngine.EventSystems;
 public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointerClickHandler, IBeginDragHandler, IEndDragHandler, IMoveHandler, IPointerDownHandler, IPointerUpHandler
 {
     //for controls handling
-    public delegate void OnPtrClick((int, int) pos);
+    public delegate void OnPtrClick(Vector2 pos);
     public static event OnPtrClick OnPointerClicked;
-    public delegate void OnPtrMove((int, int) pos);
+    public delegate void OnPtrMove(Vector2 pos);
     public static event OnPtrMove OnPointerMoved;
-    public delegate void OnDragEnd(((int sdX, int sdY),(int edX, int edY)) dragValue);
+    public delegate void OnDragEnd();
     public static event OnDragEnd OnDragEnded;
     
-    public delegate void OnDragStart((int x, int y) dragBeginPos);
+    public delegate void OnDragStart();
 
     public static event OnDragStart OnDragStarted;
     
@@ -25,40 +25,41 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
         Left, Right, Up, Down
     }
     //mousepos
-    public static (int mouseX, int mouseY) MousePos
+    public static Vector2 MousePos
     {
         get => _mPos;
         set
         {
-            _mPos.mouseX = value.mouseX;
-            _mPos.mouseY = value.mouseY;
+            _mPos.x = value.x;
+            _mPos.y = value.y;
         }
     }
 
-    private static (int mouseX, int mouseY) _mPos = (0, 0);
+    private static Vector2 _mPos = new Vector2(0, 0);
     
     //drag positions
-    public ((int startDragX, int startDragY) startDrag,
-            (int endDragX, int endDragY) endDrag) MouseDrag
+    public (Vector2 start,Vector2 end) MouseDrag
     {
         get => _mDrag;
         set
         {
-            _mDrag.sDrag = value.startDrag;
-            _mDrag.eDrag = value.endDrag;
+            _mDrag.start = value.start;
+            _mDrag.end = value.end;
         }
     }
 
-    private ((int sdX, int sdY) sDrag, (int edX, int edY) eDrag) _mDrag;
+    private (Vector2 start, Vector2 end) _mDrag;
     private bool mouseDown;
-    public static bool Dragging;
     
+    public static bool Dragging;
+    public static Direction DragDirection;
+    public static float DragCompletion;
 
     //update mouse when it moves, tracking mouse x, y
-    void UpdateMousePos(int mouseX, int mouseY)
+    void UpdateMousePos(Vector2 pos)
     {
-        _mPos = (mouseX, mouseY);
-        OnPointerMoved?.Invoke(_mPos);
+        _mPos = pos;
+        OnPointerMoved?.Invoke(pos);
     }
 
     //determine whether mouse button is held down
@@ -74,26 +75,32 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     {
         if (startDrag) {
             Dragging = true;
-            MouseDrag = (MousePos, (0, 0));
+            MouseDrag = (MousePos, Vector2.zero);
         }
         else if (endDrag)
         {
-            MouseDrag = (MouseDrag.startDrag, MousePos);
+            MouseDrag = (MouseDrag.start, MousePos);
             Dragging = false;
         }
         else
+        {
+            MouseDrag = (MouseDrag.start, MousePos);
             Dragging = true;
+        }
+
+        DragCompletion = GetDragCompletion();
+        DragDirection = GetCardinalDirectionFromDrag(MouseDrag);
     }
     
-    public static Direction GetCardinalDirectionFromDrag(((int sdX, int sdY) dragStart, (int edX, int edY) dragEnd) dragVar)
+    public static Direction GetCardinalDirectionFromDrag((Vector2 start, Vector2 end) drag)
     {
         
-        float travelX = dragVar.dragEnd.edX - dragVar.dragStart.sdX;
-        float travelY = dragVar.dragEnd.edY - dragVar.dragStart.sdY;
+        float travelX = drag.end.x - drag.start.x;
+        float travelY = drag.end.y - drag.start.y;
         
         //we'll make X take priority in the absurd case of perfect equality
         if (Mathf.Abs(travelX) >= Mathf.Abs(travelY) || HorizontalSwapsOnly)
-            return (travelX > 0) ? Direction.Left : Direction.Right;
+            return (travelX > 0) ? Direction.Right : Direction.Left;
         else
             return (travelY > 0) ? Direction.Up : Direction.Down;
     }
@@ -102,11 +109,12 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public void OnDrag(PointerEventData eventData)
     {
         UpdateDrag(false, false);
+        Debug.Log("Dragging " + DragDirection);
     }
 
     public void OnPointerMove(PointerEventData eventData)
     {
-       UpdateMousePos((int)eventData.position.x, (int)eventData.position.y);
+       UpdateMousePos(eventData.position);
        //Debug.Log("Mouse: " + MousePos);
        OnPointerMoved?.Invoke(MousePos);
     }
@@ -120,7 +128,8 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public void OnBeginDrag(PointerEventData eventData)
     {
         UpdateDrag(true, false);
-        OnDragStarted?.Invoke(MouseDrag.startDrag);
+        OnDragStart dragEvent = OnDragStarted;
+        dragEvent?.Invoke();
     } 
 
     public void OnEndDrag(PointerEventData eventData)
@@ -129,13 +138,16 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
         UpdateDrag(false, true);
         //only trigger drag event on end
         //TODO: filter smaller drag(s) out as unintentional based on multiplier
-        if (Mathf.Abs(MouseDrag.endDrag.endDragX - MouseDrag.startDrag.startDragX) <
-            DragThreshold * BoardDisplayHandler.TileSize)
+        if (DragCompletion < 1f)
             return;
         OnDragEnd dragEvent = OnDragEnded;
-        dragEvent?.Invoke(MouseDrag);
+        dragEvent?.Invoke();
     }
-
+    float GetDragCompletion()
+    {
+        return Mathf.Abs(MouseDrag.end.x - MouseDrag.start.x)/
+               (DragThreshold * BoardDisplayHandler.TileSize);
+    }
     //currently unnecessary
     public void OnMove(AxisEventData eventData)
     {

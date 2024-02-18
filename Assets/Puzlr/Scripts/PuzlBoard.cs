@@ -97,6 +97,15 @@ public class PuzlBoard
     public bool SwapTiles((int, int) a, (int, int) b, bool force = false)
     {
         if(!force){
+            if (a == (-1, -1) || b == (-1, -1)) {
+                Debug.Log("Swap failed due to invalid position.");
+                return false;
+            }
+            if (a == b)
+            {
+                Debug.Log("How did we get here?");
+                return false;
+            }
             if(board[a].moving || board[b].moving){
                 Debug.Log("Swap failed due to moving tile(s)");
                 return false;
@@ -115,7 +124,7 @@ public class PuzlBoard
                 Debug.Log("Can't swap while a tile is resolving");
                 return false;
             }
-            //Debug.Log("Succeeded in swapping.");
+            Debug.Log("Succeeded in swapping.");
             //Swap tiles via deconstruction
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
             List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
@@ -375,24 +384,25 @@ public class PuzlBoard
             }
             case BoardDir.Left:
             {
-                if (tilePos.y + 1 >= boardColumns) {
+                if (tilePos.y - 1 < 0) {
                     //Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y + 1));
                     //newPos = null;
                     return (-1, -1);
                 }
                 //newPos = board[(tilePos.x, tilePos.y)];
-                return (tilePos.x, tilePos.y);
+                return (tilePos.x, tilePos.y - 1);
             }
             case BoardDir.Right:
             {
-                if (tilePos.y - 1 < 0) {
+                
+                if (tilePos.y + 1 >= boardColumns) {
                     //Debug.LogError("Tile out of bounds: " + (tilePos.x, tilePos.y));
                     //newPos = null;
                     return (-1, -1);
                 }
 
                 //newPos = board[(tilePos.x, tilePos.y)];
-                return (tilePos.x, tilePos.y);
+                return (tilePos.x, tilePos.y + 1);
             }
             default:
             {

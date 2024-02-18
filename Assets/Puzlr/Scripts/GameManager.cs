@@ -73,12 +73,9 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
                 case GameType.Default:
                     
                     Board = new PuzlBoard(xDimensions, yDimensions);
-                    
                     Score = new ScoreHandler();
                     Score.SetBoardRef(Board);
                     ScoreDisplay.SetScoreRef(Score);
-                    
-                    DisplayHandler = BoardDisplayHandler.DisplayHandler;
                     DisplayHandler.SetBoardRef(Board);
                     DisplayHandler.CreateDisplay();
                     
