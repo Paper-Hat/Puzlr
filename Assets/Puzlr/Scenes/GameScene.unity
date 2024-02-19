@@ -247,7 +247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 1
+  m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
@@ -407,6 +407,11 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &1948778580 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1973641067701214934, guid: 52ab8856d301bc74ba08fd3d637377e2, type: 3}
+  m_PrefabInstance: {fileID: 1973641068043975005}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2122064013
 GameObject:
   m_ObjectHideFlags: 0
@@ -515,7 +520,7 @@ MonoBehaviour:
   MatchRequirement: 3
   timeUntilNewTileDropped: 3
   testGameType: 1
-  tester: 0
+  tester: 1
 --- !u!1001 &1973641068043975005
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -618,7 +623,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1449042970456551638, guid: 52ab8856d301bc74ba08fd3d637377e2, type: 3}
   m_PrefabInstance: {fileID: 1973641068043975005}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1948778580}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1197a5f066b89fe48a9b0d700dda666d, type: 3}
@@ -629,12 +634,35 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1973641067701214929, guid: 52ab8856d301bc74ba08fd3d637377e2, type: 3}
   m_PrefabInstance: {fileID: 1973641068043975005}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1948778580}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2036b287b7910aa47a7dc41ada8bccd1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1973641068043975011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1948778580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
 --- !u!1001 &5973936831623237748
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -765,6 +793,14 @@ PrefabInstance:
     - target: {fileID: 5973936831964314723, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: tileColors.Array.data[7].r
       value: 0.2784314
+      objectReference: {fileID: 0}
+    - target: {fileID: 5973936831964314732, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
+      propertyPath: m_UiScaleMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5973936831964314732, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5973936831964314734, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: m_Pivot.x

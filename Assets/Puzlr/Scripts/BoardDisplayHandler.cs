@@ -1,13 +1,8 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using DG.Tweening;
-using TMPro;
 using Unity.Collections;
-using Unity.VisualScripting;
-using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,7 +19,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     public List<Color> tileColors;
     
 
-    public void SetTileSize(int size)
+    public static void SetTileSize(int size)
     {
         TileSize = size;
     }
@@ -35,12 +30,20 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     {
         Board = board;
         Board.boardUpdate += UpdateDisplay;
+        Controls.OnDragEnded += SwapTile;
     }
     //set width and height of canvas dependant on board size
-    //let's assume cell size is always 64x64 squares
     public void CreateDisplay()
     {
         boardDisplay = new();
+        
+        //configure (use smallest) tile size based on screen size; use the smaller dimension for screen, larger dimension for board
+        int screenConstraint = (Screen.width <= Screen.height) ? Screen.width : Screen.height;
+        int boardConstraint = (Board.boardColumns >= Board.boardRows) ? Board.boardColumns : Board.boardRows;
+        //subtract by a factor of 1 tile to make room for indicators
+        int combinedConstraint = (screenConstraint - (screenConstraint / boardConstraint)) / boardConstraint;
+        SetTileSize(combinedConstraint);
+        Debug.Log(screenConstraint +", "+ boardConstraint +" : "+TileSize);
         boardViewport.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         boardContentRoot.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         Vector2 rowSize = new Vector2(Board.boardColumns * TileSize, TileSize);
@@ -82,12 +85,13 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         Vector3 boardContentRootPos = boardContentRoot.transform.position;
         RectTransform contentRootRect = (RectTransform)boardContentRoot;
         Vector3 previewerRowPos = new Vector3(boardContentRootPos.x,
-            boardContentRootPos.y + (0.5f * contentRootRect.rect.height) + (0.5f * TileSize), 0f);
+            boardContentRootPos.y + (0.5f * contentRootRect.rect.height) + (0.25f * TileSize), 0f);
         GameObject previewerRowObj = Instantiate(gameRowPrefab, gameObject.transform);
         RectTransform previewerRect = (RectTransform)previewerRowObj.transform;
         previewerRect.anchorMin = new Vector2(0.5f, 0.5f);
         previewerRect.anchorMax = new Vector2(0.5f, 0.5f);
-        previewerRect.sizeDelta = rowSize;
+        previewerRect.sizeDelta = new Vector2(rowSize.x, rowSize.y / 2);
+        previewerRect.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
         previewerRowObj.transform.position = previewerRowPos;
 #if UNITY_EDITOR
         previewerRowObj.name = "Previewers";
@@ -96,8 +100,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         {
             TilePreview previewer = Instantiate(previewerPrefab, previewerRowObj.transform).GetComponent<TilePreview>();
             previewer.SetBoardRef(Board);
-            RectTransform previewerObjRect= (RectTransform)previewer.transform;
-            previewerObjRect.sizeDelta = new Vector2(TileSize, TileSize);
+            previewer.ConfigurePreviewerSize(TileSize);
             previewObjects.Add(previewer);
         }
     }
@@ -126,11 +129,11 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         TileDisplay tileToDrop = boardDisplay[tilePos];
         TileDisplay tileBelow = boardDisplay[posBelow];
         Vector3 initialPos = tileToDrop.GetInitialPos();
-        
         //if the tile below us is solid, it should move, so we wait
         if (Board[posBelow].tileValue > 0) {
             yield return new WaitUntil(() => tileBelow.dropTween != null);
         }
+        
         //don't allow swapping into tile positions that we're dropping into, or moving tiles for that matter
         Board[posBelow].resolving = true;
         
@@ -144,6 +147,78 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         boardDisplay[tilePos].transform.position = initialPos;
         tileToDrop.moving = null;
     }
+    
+    
+    void SwapTile()
+    {
+        TileDisplay selectedTile = GetSelectedTile();
+        if (selectedTile == null) return;
+        (int x, int y) tilePos = selectedTile.GetPos();
+        (int x, int y) swapPos;
+        if (Controls.HorizontalSwapsOnly) {
+            switch (Controls.DragDirection) {
+                //swap if we can, given the direction of the swipe/drag
+                case Controls.Direction.Left:
+                    swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Left);
+                    if(Board.CanSwap(tilePos, swapPos))
+                        selectedTile.moving = boardDisplay[swapPos].moving = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Left));
+                    break;
+                case Controls.Direction.Right:
+                    swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Right);
+                    if(Board.CanSwap(tilePos, swapPos))
+                        selectedTile.moving = boardDisplay[swapPos].moving = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Right));
+                    break;
+                default:
+                    Debug.LogError("Should not have reached an up-down result with only horizontal swapping enabled.");
+                    break;
+            }
+        }
+        else
+        {
+            //potential for vertical swapping later
+        }
+        selectedTile.selected = false;
+    }
+    
+    IEnumerator HandleTileSwapping((int x, int y) tilePos, (int x, int y) swapPos, PuzlBoard.BoardDir direction)
+    {
+        yield return new WaitForEndOfFrame();
+        if (swapPos == (-1, -1)) yield break;
+        TileDisplay tileDisplay = boardDisplay[tilePos];
+        TileDisplay otherDisplay = boardDisplay[swapPos];
+        Board[tilePos].resolving = true;
+        Board[swapPos].resolving = true;
+        //both tiles should be considered resolving while we tween the swap
+        tileDisplay.swapTween = tileDisplay.transform.DOMoveX(otherDisplay.transform.position.x,Board.DropDelay * 0.2f, true);
+        otherDisplay.swapTween = otherDisplay.transform.DOMoveX(tileDisplay.transform.position.x, Board.DropDelay * 0.2f, true);
+        
+        yield return new DOTweenCYInstruction.WaitForCompletion(tileDisplay.swapTween);
+        yield return new DOTweenCYInstruction.WaitForCompletion(otherDisplay.swapTween);
+        
+        //tile on the left is always first in the swap
+        if (direction == PuzlBoard.BoardDir.Left) {
+            Board.SwapTiles(swapPos, tilePos);
+        }
+        else if (direction == PuzlBoard.BoardDir.Right) {
+            Board.SwapTiles( tilePos, swapPos);
+        }
+
+        tileDisplay.transform.position = tileDisplay.GetInitialPos();
+        otherDisplay.transform.position = otherDisplay.GetInitialPos();
+        
+        Board[tilePos].resolving = false;
+        Board[swapPos].resolving = false;
+        tileDisplay.moving = null;
+        otherDisplay.moving = null;
+        yield return null;
+    }
+
+    TileDisplay GetSelectedTile()
+    {
+        return boardDisplay.FirstOrDefault(x => x.Value.selected).Value;
+    }
+    
+    
     private void LateUpdate()
     {
         if(Board != null && Board.GetFallingTiles().Any()) {
@@ -159,5 +234,6 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     private void OnDisable()
     {
         Board.boardUpdate -= UpdateDisplay;
+        Controls.OnDragEnded -= SwapTile;
     }
 }

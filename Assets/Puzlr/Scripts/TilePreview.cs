@@ -16,15 +16,25 @@ public class TilePreview : MonoBehaviour, IPuzlGameComponent
     {
         previewerCo = StartCoroutine(PreviewTileCo(previewTileColor));
     }
-    
+
+    public void ConfigurePreviewerSize(int tileSize)
+    {
+        RectTransform objRect= (RectTransform)transform;
+        Vector2 size = new Vector2(tileSize, tileSize / 2f);
+        objRect.sizeDelta = size;
+        float childDimension = (size.x <= size.y) ? size.x : size.y;
+        Vector2 childDimensions = new Vector2(childDimension, childDimension);
+        foreach (Transform t in GetComponentsInChildren<Transform>())
+            ((RectTransform)t).sizeDelta = childDimensions;
+    }
     private IEnumerator PreviewTileCo(Color previewTileColor)
     {
         previewColor.enabled = true;
         previewColor.color = previewTileColor;
-        Tween previewTween = previewColor.DOFillAmount(0f, Board.TimeForNewTile);
+        Tween previewTween = previewColor.DOFillAmount(1f, Board.TimeForNewTile);
         yield return new DOTweenCYInstruction.WaitForCompletion(previewTween);
         previewColor.enabled = false;
-        previewColor.fillAmount = 1f;
+        previewColor.fillAmount = 0f;
         previewerCo = null;
         yield return null;
     }

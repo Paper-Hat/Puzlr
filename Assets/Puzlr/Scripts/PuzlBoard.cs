@@ -5,8 +5,8 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: Tile highlighting/arrows on swap, horizontal tile animation
-//TODO: Settings menu, "Special" gametypes (speed, endless)
+//TODO: game types (speed, endless, fidget)
+//TODO: Settings Menu
 
 public class PuzlBoard
 {
@@ -94,36 +94,10 @@ public class PuzlBoard
     //  cannot swap moving tiles
     //  cannot swap two empty tiles
     //  cannot swap with unmovable tiles
-    public bool SwapTiles((int, int) a, (int, int) b, bool force = false)
+    public void SwapTiles((int, int) a, (int, int) b, bool force = false)
     {
-        if(!force){
-            if (a == (-1, -1) || b == (-1, -1)) {
-                Debug.Log("Swap failed due to invalid position.");
-                return false;
-            }
-            if (a == b)
-            {
-                Debug.Log("How did we get here?");
-                return false;
-            }
-            if(board[a].moving || board[b].moving){
-                Debug.Log("Swap failed due to moving tile(s)");
-                return false;
-            }
-            if(board[a].tileValue == 0 && board[b].tileValue == 0){
-                Debug.Log("Attempted to swap two blank tiles.");
-                return false;
-            }
-            if(board[a].tileValue == -1 || board[b].tileValue == -1){
-                Debug.Log("Attempted to swap with a special tile");
-                return false;
-            }
-
-            if (board[a].resolving || board[b].resolving)
-            {
-                Debug.Log("Can't swap while a tile is resolving");
-                return false;
-            }
+        if(!force)
+        {
             Debug.Log("Succeeded in swapping.");
             //Swap tiles via deconstruction
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
@@ -141,7 +115,6 @@ public class PuzlBoard
                 ResolveMatches(b, (-1, -1));
             boardUpdate?.Invoke(swappedTiles);
         }
-        return true;
     }
 
     //Tiles only "move" when they fall
@@ -161,6 +134,7 @@ public class PuzlBoard
         board[newPos].resolving = false;
         board[newPos].moving = ValidDrop(newPos);
         SwapTiles(tilePos, newPos, true);
+        board[tilePos].resolving = false;
         board[tilePos].tileDrop = null;
     }
 
@@ -361,6 +335,40 @@ public class PuzlBoard
         foundMatches -= SetFallingTiles;
         tilesSwapped -= SetFallingTiles;
     }
+
+    public bool CanSwap((int x, int y) a, (int x, int y) b)
+    {
+        if (a == (-1, -1) || b == (-1, -1)) {
+            Debug.Log("Swap failed due to invalid position.");
+            return false;
+        }
+        if (a == b)
+        {
+            Debug.Log("How did we get here?");
+            return false;
+        }
+        if(board[a].moving || board[b].moving){
+            Debug.Log("Swap failed due to moving tile(s)");
+            return false;
+        }
+        if(board[a].tileValue == 0 && board[b].tileValue == 0){
+            Debug.Log("Attempted to swap two blank tiles.");
+            return false;
+        }
+        if(board[a].tileValue == -1 || board[b].tileValue == -1){
+            Debug.Log("Attempted to swap with a special tile");
+            return false;
+        }
+
+        if (board[a].resolving || board[b].resolving)
+        {
+            Debug.Log("Can't swap while a tile is resolving");
+            return false;
+        }
+
+        return true;
+    }
+    
     public (int, int) GetTile((int x, int y) tilePos, BoardDir direction)
     {
         switch (direction)

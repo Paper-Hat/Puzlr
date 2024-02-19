@@ -16,14 +16,15 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     [SerializeField] private Rect worldRect;
     private Vector3 initialPos;
     public Coroutine moving;
-    public Coroutine swapping;
+    public Coroutine indicatingSwap;
     public Tween dropTween;
-    private bool selected;
+    public Tween swapTween;
+    public bool selected;
+    
     #region Setup
     void Awake()
     {
         Controls.OnDragStarted += IndicateSwap;
-        Controls.OnDragEnded += SwapTile;
     }
 
     private void Start()
@@ -42,6 +43,8 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     {
         initialPos = transform.position;
         ConfigureWorldRect(transform.position);
+        swapIndicator.type = Image.Type.Filled;
+        swapIndicator.fillMethod = Image.FillMethod.Horizontal;
     }
 
     public Vector3 GetInitialPos()
@@ -65,8 +68,8 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     {
         RectTransform thisRect = (RectTransform)transform;
         thisRect.sizeDelta = new Vector2(displaySize, displaySize);
-        foreach (RectTransform t in transform) {
-            t.sizeDelta = new Vector2(displaySize, displaySize);
+        foreach (Transform t in GetComponentsInChildren<Transform>()) {
+            ((RectTransform)t).sizeDelta = new Vector2(displaySize, displaySize);
         }
     }
     public void SetPos((int x, int y) pos)
@@ -74,6 +77,10 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
         tilePos = pos;
     }
 
+    public (int, int) GetPos()
+    {
+        return tilePos;
+    }
     private void ConfigureWorldRect(Vector3 position)
     {
         var realPos = position;
@@ -94,7 +101,6 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
         if (worldRect.Contains(Controls.MousePos, true)) {
             //if we can't swap this tile, flash
             if (moving != null || Board[tilePos].resolving) {
-                Debug.Log("Flashing.");
                 Flash();
                 return;
             }
@@ -103,15 +109,14 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
                 return;
             }
             selected = true;
-            swapping = StartCoroutine(HandleSwapIndicator());
+            indicatingSwap = StartCoroutine(HandleSwapIndicator());
         }
 
         
     }
-    public IEnumerator HandleSwapIndicator()
+    IEnumerator HandleSwapIndicator()
     {
         swapIndicator.enabled = true;
-        swapIndicator.fillMethod = Image.FillMethod.Vertical;
         swapIndicator.fillAmount = 0f;
         //parent object contains mask
         var indicatorRot = swapIndicator.gameObject.transform.parent;
@@ -139,46 +144,17 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
         }
         swapIndicator.transform.rotation = Quaternion.identity;
         swapIndicator.enabled = false;
-        swapping = null;
+        indicatingSwap = null;
         yield return null;
     }
 
     //indicate with a semi-transparent frame
     void Flash()
     {
-        Debug.Log("Not yet implemented.");
+        Debug.Log("Flashing.");
     }
+    
     #endregion
-    
-    
-    void SwapTile()
-    {
-        if (!selected) return;
-        (int, int) swapPos = (-1, -1);
-        
-        if (Controls.HorizontalSwapsOnly)
-        {
-            switch (Controls.DragDirection) {
-                case Controls.Direction.Left:
-                    //tile on the left is always first in the swap
-                    swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Left);
-                    Board.SwapTiles(swapPos, tilePos);
-                    break;
-                case Controls.Direction.Right:
-                    swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Right);
-                    Board.SwapTiles( tilePos, swapPos);
-                    break;
-                default:
-                    Debug.LogError("Should not have reached an up-down result with only horizontal swapping enabled.");
-                    break;
-            }
-        }
-        else
-        {
-            //potential for vertical swapping later
-        }
-        selected = false;
-    }
 
     #if UNITY_EDITOR
     [SerializeField]private Tile tileInfo;
@@ -203,9 +179,8 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     private void OnDisable()
     {
         Controls.OnDragStarted -= IndicateSwap;
-        Controls.OnDragEnded -= SwapTile;
         moving = null;
-        swapping = null;
+        indicatingSwap = null;
         dropTween?.Kill();
     }
 
