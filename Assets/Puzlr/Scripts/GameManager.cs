@@ -150,6 +150,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
                         DisplayHandler.PreviewRow(rowVals);
                         yield return new WaitForSeconds(Board.TimeForNewTile);
                         Board.PlaceRow(rowVals);
+                        ++numTilesDropped;
                     }
                     else
                     {
