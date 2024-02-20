@@ -22,7 +22,7 @@ public class ScoreHandler : IPuzlGameComponent
         set => playerScore = value;
     }
     private int playerScore = 0;
-    
+    public int TotalMatches => numTotalMatches;
     [SerializeField][ReadOnly(true)] private int numTotalMatches = 0;
     [SerializeField] private int totalMatchThreshold = 10;
     private int totalMatchMultiplier = 1;

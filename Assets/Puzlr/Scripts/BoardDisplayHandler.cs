@@ -15,11 +15,11 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     [SerializeField] private GameObject gameRowPrefab;
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject previewerPrefab;
+    public Coroutine HandleTilesCo;
     public Button dropButton;
     private bool canDrop;
     public static int TileSize = 64;
     public List<Color> tileColors;
-    
     #region Configuration
     public static void SetTileSize(int size)
     {
@@ -42,6 +42,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         //configure (use smallest) tile size based on screen size; use the smaller dimension for screen, larger dimension for board
         int screenConstraint = (Screen.width <= Screen.height) ? Screen.width : Screen.height;
         int boardConstraint = (Board.boardColumns >= Board.boardRows) ? Board.boardColumns : Board.boardRows;
+        
         //subtract by a factor of 1 tile to make room for indicators
         int combinedConstraint = (screenConstraint - (screenConstraint / boardConstraint)) / boardConstraint;
         SetTileSize(combinedConstraint);
@@ -148,11 +149,21 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         (int, int) posBelow = Board.GetTile(tilePos, PuzlBoard.BoardDir.Below);
         TileDisplay tileToDrop = boardDisplay[tilePos];
         TileDisplay tileBelow = boardDisplay[posBelow];
-        Vector3 initialPos = tileToDrop.GetInitialPos();
-        //if the tile below us is solid, it should move, so we wait
-        if (Board[posBelow].tileValue > 0) {
-            yield return new WaitUntil(() => tileBelow.dropTween != null);
+        
+        //if we try to move into a tile that's swapping, wait until it's done first
+        if (tileBelow.swapping != null) {
+            yield return new WaitUntil(() => tileBelow.swapping == null);
         }
+        
+        //if the tile below us is solid, check again whether we should actually fall
+        if (Board[posBelow].tileValue > 0) {
+            if (!Board[posBelow].moving) {
+                Board[tilePos].moving = false;
+                tileToDrop.moving = null;
+                yield break;
+            }
+        }
+        Vector3 initialPos = tileToDrop.GetInitialPos();
         
         //don't allow swapping into tile positions that we're dropping into, or moving tiles for that matter
         Board[posBelow].resolving = true;
@@ -181,12 +192,16 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
                 case Controls.Direction.Left:
                     swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Left);
                     if(Board.CanSwap(tilePos, swapPos))
-                        selectedTile.moving = boardDisplay[swapPos].moving = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Left));
+                        selectedTile.swapping = boardDisplay[swapPos].swapping = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Left));
+                    else
+                        selectedTile.Flash();
                     break;
                 case Controls.Direction.Right:
                     swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Right);
                     if(Board.CanSwap(tilePos, swapPos))
-                        selectedTile.moving = boardDisplay[swapPos].moving = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Right));
+                        selectedTile.swapping = boardDisplay[swapPos].swapping = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Right));
+                    else
+                        selectedTile.Flash();
                     break;
                 default:
                     Debug.LogError("Should not have reached an up-down result with only horizontal swapping enabled.");
@@ -228,8 +243,8 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         
         Board[tilePos].resolving = false;
         Board[swapPos].resolving = false;
-        tileDisplay.moving = null;
-        otherDisplay.moving = null;
+        tileDisplay.swapping = null;
+        otherDisplay.swapping = null;
         yield return null;
     }
     #endregion
@@ -247,7 +262,16 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         return true;
     }
     #endregion
-    private void LateUpdate()
+
+    public IEnumerator HandleFallingTiles(bool control)
+    {
+        while (control) {
+            yield return new WaitForSeconds(Board.DropDelay);
+            DropFallingTiles();
+            yield return null;
+        }
+    }
+    public void DropFallingTiles()
     {
         if(Board != null && Board.GetFallingTiles().Any()) {
             foreach (var tilePos in Board.GetFallingTiles()) {
@@ -259,9 +283,13 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         }
     }
 
-    private void OnDisable()
+    public void UnsubscribeListeners()
     {
         Board.boardUpdate -= UpdateDisplay;
         Controls.OnDragEnded -= SwapTile;
+    }
+    private void OnDisable()
+    {
+        UnsubscribeListeners();
     }
 }

@@ -13,6 +13,7 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     [SerializeField] private Rect worldRect;
     private Vector3 initialPos;
     public Coroutine moving;
+    public Coroutine swapping;
     public Coroutine indicatingSwap;
     public Tween dropTween;
     public Tween swapTween;
@@ -146,7 +147,7 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     }
 
     //indicate with a semi-transparent frame
-    void Flash()
+    public void Flash()
     {
         Debug.Log("Flashing.");
     }

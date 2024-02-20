@@ -5,7 +5,6 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: game types (speed, endless, fidget)
 //TODO: Settings Menu
 
 public class PuzlBoard
@@ -31,10 +30,9 @@ public class PuzlBoard
 
     public int boardRows, boardColumns;
     public int TilesRequiredToMatch = 3;
-    public float DropDelay = 1f;
+    private float initialSpeed;
     public float TimeForNewTile = 3f;
-    
-    //private bool CanMatchVertical = false;
+    public float DropDelay = 1f;
     private Dictionary<(int, int), Tile> board;
     #region Delegates_and_Events
     public delegate void OnTileSwap(List<(int, int)> tilesSwapped);
@@ -52,6 +50,7 @@ public class PuzlBoard
         boardRows = rows;
         boardColumns = columns;
         InitBoard(rows, columns);
+        initialSpeed = TimeForNewTile;
         foundMatches += SetFallingTiles;
         tilesSwapped += SetFallingTiles;
     }
@@ -249,7 +248,6 @@ public class PuzlBoard
         return matches;
     }
     #endregion
-    
     #region Falling_Tiles
 
     //falling tiles occur for three reasons
@@ -265,7 +263,7 @@ public class PuzlBoard
             if (thisTile.tileValue == 0) {
                 if (tile.x + 1 >= boardRows) continue;
 
-                board[tile].resolving = board[GetTile(tile, BoardDir.Above)].tileValue > 0;
+                //board[tile].resolving = board[GetTile(tile, BoardDir.Above)].tileValue > 0;
                 for (int i = tile.x + 1; i < boardRows; i++) {
                     var iterTile = board[(i, tile.y)];
                     if (iterTile.tileValue is -1 or 0)
@@ -286,7 +284,7 @@ public class PuzlBoard
                         break;
                     else if (iterTile.tileValue == 0)
                     {
-                        iterTile.resolving = true;
+                        //iterTile.resolving = true;
                         thisTile.moving = true;
                     }
                     else if (iterTile.moving)
@@ -299,7 +297,6 @@ public class PuzlBoard
         }
     }
     #endregion
-    
     #region Tile Spawning
     public void PlaceTile(int value, (int x, int y) coordinate, bool fromTopOfBoard = false)
     {
@@ -314,8 +311,15 @@ public class PuzlBoard
         
         Tile modifiedTile = board[coordinate];
         modifiedTile.tileValue = value;
-        if (board[GetTile(coordinate, BoardDir.Below)].tileValue == 0)
+        var tileBelow = board[GetTile(coordinate, BoardDir.Below)];
+        //if there's nothing under us or the next tile is also moving, we move
+        if (tileBelow.tileValue == 0 || tileBelow.moving)
             modifiedTile.moving = true;
+        //otherwise, see if where we placed the tile resulted in a match
+        else
+        {
+            ResolveMatches(coordinate, (-1, -1));
+        }
         
         //Debug.Log("Placed value "+modifiedTile.tileValue+" at location: ("+coordinate.x+", "+coordinate.y+")");
         boardUpdate?.Invoke(new List<(int, int)>{coordinate});
@@ -327,7 +331,6 @@ public class PuzlBoard
             PlaceTile(tileValues[i], (boardRows - 1, i), true);
     }
     #endregion
-    
     #region Helpers
 
     public enum BoardDir
@@ -439,6 +442,44 @@ public class PuzlBoard
             return (boardRows - 1, Random.Range(0, boardColumns));
         }
         return (Random.Range(0, boardRows), Random.Range(0, boardColumns));
+    }
+
+    /// <summary>
+    /// Returns an integer list of random row values
+    /// </summary>
+    /// <returns></returns>
+    public int[] RandomRow(int distinctTiles)
+    {
+        int[] rowVals = new int[boardColumns];
+        for (int i = 0; i < rowVals.Length; ++i) {
+            rowVals[i] = Random.Range(1, distinctTiles);
+        }
+        return rowVals;
+    }
+    public void SetupSpeed(float timeForNewTileDrop)
+    {
+        TimeForNewTile = timeForNewTileDrop;
+        DropDelay = TimeForNewTile / 5f;
+    }
+    /// <summary>
+    /// Modifies gameplay speed by a factor of its initial value
+    /// </summary>
+    /// <param name="speedModifier"></param>
+    /// <param name="factor"></param>
+    public void ChangeSpeed(int speedModifier, float factor, float maxSpeed)
+    {
+        //can't go too fast
+        if (TimeForNewTile <= maxSpeed) return;
+        if (factor < 5) {
+            Debug.LogError("Reconsider this.");
+            return;
+        }
+        
+        float step = speedModifier * (initialSpeed / factor);
+        if (TimeForNewTile - step <= step)
+            return;
+        TimeForNewTile -= step;
+        DropDelay = TimeForNewTile / 5f;
     }
     #endregion
 }

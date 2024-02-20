@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -14,20 +15,20 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     [Header("GameType Agnostic Settings")] 
     public float GameStartDelay = 5f;
     public CountdownTimer gameStartTimer;
-    
     [SerializeField] [Range(10, 16)] private int xDimensions;
     [SerializeField] [Range(6, 12)] private int yDimensions;
     [Range(4, 7)] public int distinctTiles = 4;
     public int defaultRowFillCount = 3;
     [Range(3, 5)] public int MatchRequirement = 3;
-
     
+    [Header("Speed Gameplay Settings")]
+    [SerializeField] [Range(.1f, .5f)] private float maxSpeed;
+    [SerializeField] [Range(3f, 5f)] private float startSpeed;
+    [SerializeField] [Range(10f, 30f)] private float speedIncrement;
+    [SerializeField] [Range(10, 100)] private int matchesUntilSpeedup;
+    private int matchCounter = 1;
+    private int numTilesDropped;
     public static GameType GameMode = GameType.Endless;
-
-    [Header("Default Game Settings")] 
-    //Time before new tile drops (in seconds)  
-    public int timeUntilNewTileDropped;
-    
     public Coroutine GameLoop;
     private bool _setup_complete;
     private bool continuePlaying = true;
@@ -47,6 +48,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     [Header("Test Scene")] 
     [SerializeField] private GameType testGameType;
     [SerializeField] private bool tester;
+    [SerializeField] [ReadOnly] private float currentSpeed;
     private void Start()
     {
         if (tester)
@@ -56,6 +58,13 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
             return;
         }
         StartGame(GameMode);
+    }
+
+    private void FixedUpdate()
+    {
+        if (Board != null) {
+            currentSpeed = Board.TimeForNewTile;
+        }
     }
 #endif
     public void StartGame(GameType selectedGameType)
@@ -73,6 +82,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
             {
                 case GameType.Endless:
                     ConfigureGame_Default();
+                    Board.SetupSpeed(startSpeed);
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
                     
                     break;
@@ -103,50 +113,62 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
         Board.boardOverflow += GameOver;
     }
     
+    int tileToPlace;
+    (int x, int y) locationToPlace;
+    private int[] rowVals;
     public IEnumerator PlayGame(GameType gameMode)
     {
         yield return new WaitUntil(() => _setup_complete);
         gameStartTimer.StartTimer(GameStartDelay);
         yield return new WaitUntil(() => !gameStartTimer.IsCounting());
         DisplayHandler.dropButton.gameObject.SetActive(GameMode == GameType.Fidget);
-        //declare vars in outer scope
+
+        DisplayHandler.HandleTilesCo = StartCoroutine(DisplayHandler.HandleFallingTiles(continuePlaying));
         while (continuePlaying) {
-            int tileToPlace;
-            (int x, int y) locationToPlace;
+            
             switch (gameMode)
             {
                 case GameType.Endless:
                     //place random tile at the top of the board on the timer
                     //this gamemode is effectively "endless" mode
-                    
                     tileToPlace = Random.Range(1, distinctTiles);
                     locationToPlace = Board.RandomTile(true);
-                    //Debug.Log("Readying value "+tileToPlace+" to place at ("+locationToPlace.Item1+", "+locationToPlace.Item2+")");
                     DisplayHandler.PreviewTile(locationToPlace.y, tileToPlace);
-                    yield return new WaitForSeconds(timeUntilNewTileDropped);
+                    yield return new WaitForSeconds(Board.TimeForNewTile);
                     Board.PlaceTile(tileToPlace, locationToPlace, true);
                     
                     break;
                 case GameType.Speed:
-                    
-                    tileToPlace = Random.Range(1, distinctTiles);
-                    locationToPlace = Board.RandomTile(true);
-                    //Debug.Log("Readying value "+tileToPlace+" to place at ("+locationToPlace.Item1+", "+locationToPlace.Item2+")");
-                    DisplayHandler.PreviewTile(locationToPlace.y, tileToPlace);
-                    yield return new WaitForSeconds(timeUntilNewTileDropped);
-                    Board.PlaceTile(tileToPlace, locationToPlace, true);
+                    //if we've reached enough tiles to speed up, do so
+                    if (Score.TotalMatches / matchesUntilSpeedup == matchCounter) {
+                        matchCounter++;
+                        Board.ChangeSpeed(1,speedIncrement, maxSpeed);
+                    }
+                    //every 10 matches, drop an entire row!
+                    if (numTilesDropped >= 10 && numTilesDropped % 10 == 0) {
+                        rowVals = Board.RandomRow(distinctTiles);
+                        DisplayHandler.PreviewRow(rowVals);
+                        yield return new WaitForSeconds(Board.TimeForNewTile);
+                        Board.PlaceRow(rowVals);
+                    }
+                    else
+                    {
+                        tileToPlace = Random.Range(1, distinctTiles);
+                        locationToPlace = Board.RandomTile(true);
+                        DisplayHandler.PreviewTile(locationToPlace.y, tileToPlace);
+                        yield return new WaitForSeconds(Board.TimeForNewTile);
+                        Board.PlaceTile(tileToPlace, locationToPlace, true);
+                        ++numTilesDropped;
+                    }
                     break;
                 case GameType.Fidget:
                     //trigger a row to drop after the drop button is pressed
                     yield return new WaitUntil(() => DisplayHandler.ReadyForDrop());
                     //simple switch pattern to enable/disable drop button
                     DisplayHandler.dropButton.enabled = false;
-                    int[] rowVals = new int[Board.boardColumns];
-                    for (int i = 0; i < rowVals.Length; ++i) {
-                        rowVals[i] = Random.Range(1, distinctTiles);
-                    }
+                    rowVals = Board.RandomRow(distinctTiles);
                     DisplayHandler.PreviewRow(rowVals);
-                    yield return new WaitForSeconds(timeUntilNewTileDropped);
+                    yield return new WaitForSeconds(Board.TimeForNewTile);
                     Board.PlaceRow(rowVals);
                     DisplayHandler.SetReadyForDrop(false);
                     DisplayHandler.dropButton.enabled = true;
@@ -156,7 +178,6 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
                     Debug.LogError("Attempted to start game with no eligible game mode selected.");
                     break;
             }
-            
             yield return null;
         }
     }
@@ -172,8 +193,12 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
         string endScore = "";
         Board.UnsubscribeListeners();
         Score.UnsubscribeListeners();
+        DisplayHandler.HandleTilesCo = null;
         DisplayHandler.dropButton.gameObject.SetActive(false);
+        DisplayHandler.UnsubscribeListeners();
         GameLoop = null;
+        matchCounter = 1;
+        numTilesDropped = 0;
         #if UNITY_EDITOR
         if (tester)
             return;
