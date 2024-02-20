@@ -10,15 +10,17 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
 {
     private Dictionary<(int, int), TileDisplay> boardDisplay;
     [SerializeField] [ReadOnly] private List<TilePreview> previewObjects;
-    [SerializeField] private RectTransform boardViewport;
+    [SerializeField] private RectTransform boardControlsScreen;
     [SerializeField] private RectTransform boardContentRoot;
     [SerializeField] private GameObject gameRowPrefab;
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject previewerPrefab;
+    public Button dropButton;
+    private bool canDrop;
     public static int TileSize = 64;
     public List<Color> tileColors;
     
-
+    #region Configuration
     public static void SetTileSize(int size)
     {
         TileSize = size;
@@ -44,7 +46,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         int combinedConstraint = (screenConstraint - (screenConstraint / boardConstraint)) / boardConstraint;
         SetTileSize(combinedConstraint);
         Debug.Log(screenConstraint +", "+ boardConstraint +" : "+TileSize);
-        boardViewport.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
+        boardControlsScreen.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         boardContentRoot.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         Vector2 rowSize = new Vector2(Board.boardColumns * TileSize, TileSize);
         ConfigureBoard(rowSize);
@@ -104,6 +106,16 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
             previewObjects.Add(previewer);
         }
     }
+
+    public void SetReadyForDrop(bool ready)
+    {
+        canDrop = ready;
+    }
+    public bool ReadyForDrop()
+    {
+        return canDrop;
+    }
+    #endregion
     void UpdateDisplay(List<(int, int)> tilePos)
     {
         foreach (var pos in tilePos) {
@@ -122,7 +134,15 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
             Debug.Log("Attempted to preview when a preview was already playing.");
         }
     }
+
+    public void PreviewRow(int[] values)
+    {
+        for (int i = 0; i < values.Length; ++i) {
+            PreviewTile(i, values[i]);
+        }
+    }
     
+    #region Moving_Tiles
     private IEnumerator MoveDisplay((int, int) tilePos)
     {
         (int, int) posBelow = Board.GetTile(tilePos, PuzlBoard.BoardDir.Below);
@@ -212,13 +232,21 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         otherDisplay.moving = null;
         yield return null;
     }
-
+    #endregion
+    #region Helpers
     TileDisplay GetSelectedTile()
     {
         return boardDisplay.FirstOrDefault(x => x.Value.selected).Value;
     }
-    
-    
+
+    public bool AllPreviewsCompleted()
+    {
+        foreach(TilePreview p in previewObjects)
+            if (p.previewerCo != null)
+                return false;
+        return true;
+    }
+    #endregion
     private void LateUpdate()
     {
         if(Board != null && Board.GetFallingTiles().Any()) {

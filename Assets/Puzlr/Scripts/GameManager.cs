@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
 using Random = UnityEngine.Random;
 
 
@@ -23,7 +22,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     [Range(3, 5)] public int MatchRequirement = 3;
 
     
-    public static GameType GameMode = GameType.Default;
+    public static GameType GameMode = GameType.Endless;
 
     [Header("Default Game Settings")] 
     //Time before new tile drops (in seconds)  
@@ -34,8 +33,9 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     private bool continuePlaying = true;
     public enum GameType
     {
-        Special,
-        Default
+        Endless,
+        Speed,
+        Fidget,
     }
 
     void Awake()
@@ -51,6 +51,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     {
         if (tester)
         {
+            
             StartGame(testGameType);
             return;
         }
@@ -60,7 +61,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     public void StartGame(GameType selectedGameType)
     {
         SetupGame(selectedGameType);
-        GameLoop = StartCoroutine(PlayGame(GameMode));
+        GameLoop = StartCoroutine(PlayGame(selectedGameType));
     }
     
 
@@ -70,20 +71,19 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
             GameMode = mode;
             switch (mode)
             {
-                case GameType.Default:
-                    
-                    Board = new PuzlBoard(xDimensions, yDimensions);
-                    Score = new ScoreHandler();
-                    Score.SetBoardRef(Board);
-                    ScoreDisplay.SetScoreRef(Score);
-                    DisplayHandler.SetBoardRef(Board);
-                    DisplayHandler.CreateDisplay();
-                    
-                    Board.TilesRequiredToMatch = MatchRequirement;
+                case GameType.Endless:
+                    ConfigureGame_Default();
                     Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
-                    Board.boardOverflow += GameOver;
+                    
                     break;
-                case GameType.Special:
+                case GameType.Speed:
+                    ConfigureGame_Default();
+                    Board.FillBoardRandom(distinctTiles, defaultRowFillCount);
+                    break;
+                //fill entire board for "fidget" mode
+                case GameType.Fidget:
+                    ConfigureGame_Default();
+                    Board.FillBoardRandom(distinctTiles, xDimensions);
                     break;
             }
             _setup_complete = true;
@@ -91,28 +91,66 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
 
     }
 
+    void ConfigureGame_Default()
+    {
+        Board = new PuzlBoard(xDimensions, yDimensions);
+        Score = new ScoreHandler();
+        Score.SetBoardRef(Board);
+        ScoreDisplay.SetScoreRef(Score);
+        DisplayHandler.SetBoardRef(Board);
+        DisplayHandler.CreateDisplay();
+        Board.TilesRequiredToMatch = MatchRequirement;
+        Board.boardOverflow += GameOver;
+    }
+    
     public IEnumerator PlayGame(GameType gameMode)
     {
         yield return new WaitUntil(() => _setup_complete);
         gameStartTimer.StartTimer(GameStartDelay);
         yield return new WaitUntil(() => !gameStartTimer.IsCounting());
+        DisplayHandler.dropButton.gameObject.SetActive(GameMode == GameType.Fidget);
+        //declare vars in outer scope
         while (continuePlaying) {
+            int tileToPlace;
+            (int x, int y) locationToPlace;
             switch (gameMode)
             {
-                case GameType.Default:
+                case GameType.Endless:
                     //place random tile at the top of the board on the timer
                     //this gamemode is effectively "endless" mode
                     
-                    int tileToPlace = Random.Range(1, distinctTiles);
-                    (int x, int y) locationToPlace = Board.RandomTile(true);
+                    tileToPlace = Random.Range(1, distinctTiles);
+                    locationToPlace = Board.RandomTile(true);
                     //Debug.Log("Readying value "+tileToPlace+" to place at ("+locationToPlace.Item1+", "+locationToPlace.Item2+")");
                     DisplayHandler.PreviewTile(locationToPlace.y, tileToPlace);
                     yield return new WaitForSeconds(timeUntilNewTileDropped);
                     Board.PlaceTile(tileToPlace, locationToPlace, true);
                     
                     break;
-                case GameType.Special:
-                    Debug.LogError("Not yet implemented.");
+                case GameType.Speed:
+                    
+                    tileToPlace = Random.Range(1, distinctTiles);
+                    locationToPlace = Board.RandomTile(true);
+                    //Debug.Log("Readying value "+tileToPlace+" to place at ("+locationToPlace.Item1+", "+locationToPlace.Item2+")");
+                    DisplayHandler.PreviewTile(locationToPlace.y, tileToPlace);
+                    yield return new WaitForSeconds(timeUntilNewTileDropped);
+                    Board.PlaceTile(tileToPlace, locationToPlace, true);
+                    break;
+                case GameType.Fidget:
+                    //trigger a row to drop after the drop button is pressed
+                    yield return new WaitUntil(() => DisplayHandler.ReadyForDrop());
+                    //simple switch pattern to enable/disable drop button
+                    DisplayHandler.dropButton.enabled = false;
+                    int[] rowVals = new int[Board.boardColumns];
+                    for (int i = 0; i < rowVals.Length; ++i) {
+                        rowVals[i] = Random.Range(1, distinctTiles);
+                    }
+                    DisplayHandler.PreviewRow(rowVals);
+                    yield return new WaitForSeconds(timeUntilNewTileDropped);
+                    Board.PlaceRow(rowVals);
+                    DisplayHandler.SetReadyForDrop(false);
+                    DisplayHandler.dropButton.enabled = true;
+                    
                     break;
                 default:
                     Debug.LogError("Attempted to start game with no eligible game mode selected.");
@@ -123,6 +161,10 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
         }
     }
 
+    public void TriggerGameOver()
+    {
+        GameOver(EventArgs.Empty);
+    }
     private void GameOver(EventArgs e)
     {
         continuePlaying = false;
@@ -130,9 +172,16 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
         string endScore = "";
         Board.UnsubscribeListeners();
         Score.UnsubscribeListeners();
+        DisplayHandler.dropButton.gameObject.SetActive(false);
+        GameLoop = null;
+        #if UNITY_EDITOR
+        if (tester)
+            return;
+        #endif
         PopupHandler._instance.AddPopupToQueue(PopupHandler._instance["GameOver"], endScore);
         //trigger popups at the end of the game
         PopupHandler._instance.TriggerPopups();
+        
     }
 
     public PuzlBoard Board { get; set; }

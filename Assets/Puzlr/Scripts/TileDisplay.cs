@@ -1,12 +1,9 @@
-using System;
+
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using DG.Tweening;
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 using UnityEngine.UI;
 public class TileDisplay : MonoBehaviour, IPuzlGameComponent
 {

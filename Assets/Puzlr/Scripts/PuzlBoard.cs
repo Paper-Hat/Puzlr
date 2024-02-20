@@ -320,7 +320,12 @@ public class PuzlBoard
         //Debug.Log("Placed value "+modifiedTile.tileValue+" at location: ("+coordinate.x+", "+coordinate.y+")");
         boardUpdate?.Invoke(new List<(int, int)>{coordinate});
     }
-    
+
+    public void PlaceRow(int[] tileValues)
+    {
+        for (int i = 0; i < tileValues.Length; ++i)
+            PlaceTile(tileValues[i], (boardRows - 1, i), true);
+    }
     #endregion
     
     #region Helpers
