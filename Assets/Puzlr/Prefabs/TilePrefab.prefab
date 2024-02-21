@@ -159,6 +159,8 @@ MonoBehaviour:
     y: 0
     width: 0
     height: 0
+  selected: 0
+  waitingForSwap: 0
   tileInfo:
     tileValue: 0
     moving: 0
@@ -422,7 +424,7 @@ MonoBehaviour:
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
-  m_FillMethod: 1
+  m_FillMethod: 0
   m_FillAmount: 0
   m_FillClockwise: 1
   m_FillOrigin: 0

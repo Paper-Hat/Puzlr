@@ -6,6 +6,7 @@ using System.Linq;
 using Random = UnityEngine.Random;
 
 //TODO: Settings Menu
+//TODO: Game Visuals
 
 public class PuzlBoard
 {
@@ -93,7 +94,7 @@ public class PuzlBoard
     //  cannot swap moving tiles
     //  cannot swap two empty tiles
     //  cannot swap with unmovable tiles
-    public void SwapTiles((int, int) a, (int, int) b, bool force = false)
+    public void SwapTiles((int x, int y) a, (int x, int y) b, bool force = false)
     {
         if(!force)
         {
@@ -102,8 +103,23 @@ public class PuzlBoard
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
             List<(int, int)> swappedTiles = new List<(int, int)> { a, b };
             boardUpdate?.Invoke(swappedTiles);
-            //List<(int, int)> matches = ResolveMatches(a, b);
-            ResolveMatches(a, b);
+
+            //if the swapped tile is not moving and it won't fall, check matches
+            if (!board[a].moving)
+            {
+                var bA = GetTile(a, BoardDir.Below);
+                if(bA == (-1, -1) || board[bA].tileValue != 0)
+                    ResolveMatches(a, (-1, -1));
+            }
+
+            if (!board[b].moving)
+            {
+                var bB = GetTile(b, BoardDir.Below);
+                if(bB == (-1, -1) || board[bB].tileValue != 0)
+                    ResolveMatches(b, (-1, -1));
+            }
+
+            //ResolveMatches(a, b);
             tilesSwapped?.Invoke(swappedTiles);
         }
         else
@@ -158,7 +174,7 @@ public class PuzlBoard
     //checks rows and columns of swapped tiles for matches
     //our match checks assume that tiles can only be swapped horizontally
     //setup bool relevant when creating board to ensure no pre-selected matches
-    private List<(int, int)> ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2, bool setup = false){
+    public List<(int, int)> ResolveMatches((int x, int y) coordinate1, (int x, int y) coordinate2, bool setup = false){
         List<(int, int)> allMatches = new();
         bool singleCoord = (coordinate2 == (-1, -1));
         
@@ -459,7 +475,7 @@ public class PuzlBoard
     public void SetupSpeed(float timeForNewTileDrop)
     {
         TimeForNewTile = timeForNewTileDrop;
-        DropDelay = TimeForNewTile / 5f;
+        DropDelay = TimeForNewTile / 3f;
     }
     /// <summary>
     /// Modifies gameplay speed by a factor of its initial value
@@ -479,7 +495,7 @@ public class PuzlBoard
         if (TimeForNewTile - step <= step)
             return;
         TimeForNewTile -= step;
-        DropDelay = TimeForNewTile / 5f;
+        DropDelay = TimeForNewTile / 3f;
     }
     #endregion
 }

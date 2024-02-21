@@ -18,6 +18,7 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
     public Tween dropTween;
     public Tween swapTween;
     public bool selected;
+    public bool waitingForSwap;
     
     #region Setup
     void Awake()
@@ -42,7 +43,6 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
         initialPos = transform.position;
         ConfigureWorldRect(transform.position);
         swapIndicator.type = Image.Type.Filled;
-        swapIndicator.fillMethod = Image.FillMethod.Horizontal;
     }
 
     public Vector3 GetInitialPos()
@@ -109,7 +109,6 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
             selected = true;
             indicatingSwap = StartCoroutine(HandleSwapIndicator());
         }
-
         
     }
     IEnumerator HandleSwapIndicator()
@@ -135,15 +134,22 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
                 case Controls.Direction.Down:
                     break;
             }
-            
+            swapIndicator.fillMethod = Image.FillMethod.Vertical;
             //set the fill amount on the arrow based as a percentage of the drag threshold to better indicate swapping
             swapIndicator.fillAmount = Controls.DragCompletion;
             yield return null;
         }
-        swapIndicator.transform.rotation = Quaternion.identity;
+        //swapIndicator.transform.rotation = Quaternion.identity;
         swapIndicator.enabled = false;
         indicatingSwap = null;
         yield return null;
+    }
+
+    public void ResetIndicator()
+    {
+        swapIndicator.transform.rotation = Quaternion.identity;
+        swapIndicator.enabled = false;
+        indicatingSwap = null;
     }
 
     //indicate with a semi-transparent frame

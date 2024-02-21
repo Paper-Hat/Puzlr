@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using DG.Tweening;
 using Unity.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -24,7 +25,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
     [Header("Speed Gameplay Settings")]
     [SerializeField] [Range(.1f, .5f)] private float maxSpeed;
     [SerializeField] [Range(3f, 5f)] private float startSpeed;
-    [SerializeField] [Range(10f, 30f)] private float speedIncrement;
+    [SerializeField] [Range(10f, 100f)] private float speedFactor;
     [SerializeField] [Range(10, 100)] private int matchesUntilSpeedup;
     private int matchCounter = 1;
     private int numTilesDropped;
@@ -142,7 +143,7 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
                     //if we've reached enough tiles to speed up, do so
                     if (Score.TotalMatches / matchesUntilSpeedup == matchCounter) {
                         matchCounter++;
-                        Board.ChangeSpeed(1,speedIncrement, maxSpeed);
+                        Board.ChangeSpeed(1,speedFactor, maxSpeed);
                     }
                     //every 10 matches, drop an entire row!
                     if (numTilesDropped >= 10 && numTilesDropped % 10 == 0) {
@@ -192,11 +193,13 @@ public class GameManager : MonoBehaviour, IPuzlGameComponent
         continuePlaying = false;
         Debug.Log("Game over.");
         string endScore = "";
+        
         Board.UnsubscribeListeners();
         Score.UnsubscribeListeners();
         DisplayHandler.HandleTilesCo = null;
         DisplayHandler.dropButton.gameObject.SetActive(false);
         DisplayHandler.UnsubscribeListeners();
+        DOTween.Clear();
         GameLoop = null;
         matchCounter = 1;
         numTilesDropped = 0;

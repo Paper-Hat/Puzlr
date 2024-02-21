@@ -107,7 +107,6 @@ public class Controls : MonoBehaviour,IDragHandler, IPointerMoveHandler, IPointe
     public void OnDrag(PointerEventData eventData)
     {
         UpdateDrag(false, false);
-        Debug.Log("Dragging " + DragDirection);
     }
 
     public void OnPointerMove(PointerEventData eventData)

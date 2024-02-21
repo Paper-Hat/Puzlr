@@ -450,11 +450,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7811464192635909571, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: maxSpeed
-      value: 0.2
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7811464192635909571, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: startSpeed
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7811464192635909571, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
+      propertyPath: speedFactor
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7811464192635909571, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: testGameType
@@ -462,7 +466,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7811464192635909571, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: speedIncrement
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7811464192635909571, guid: adb6d1ec6e5769c489eb99c6fabbd42e, type: 3}
       propertyPath: matchesUntilSpeedup

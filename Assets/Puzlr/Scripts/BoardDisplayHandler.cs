@@ -123,6 +123,8 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
             Tile gameTile = Board[pos];
             TileDisplay td = boardDisplay[pos];
             td.ConfigureImage(tileColors[gameTile.tileValue]);
+            if(td.indicatingSwap != null && gameTile.tileValue == 0)
+                td.ResetIndicator();
         }
     }
 
@@ -150,19 +152,32 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         TileDisplay tileToDrop = boardDisplay[tilePos];
         TileDisplay tileBelow = boardDisplay[posBelow];
         
-        //if we try to move into a tile that's swapping, wait until it's done first
-        if (tileBelow.swapping != null) {
+        //if we try to move into a tile that's swapping, wait until it's done first and send the wait upwards
+        if (tileBelow.swapping != null)
+        {
+            tileToDrop.waitingForSwap = true;
             yield return new WaitUntil(() => tileBelow.swapping == null);
         }
-        
+        if (tileBelow.waitingForSwap)
+        {
+            tileToDrop.waitingForSwap = true;
+            yield return new WaitUntil(() => tileBelow.waitingForSwap == false);
+        }
         //if the tile below us is solid, check again whether we should actually fall
         if (Board[posBelow].tileValue > 0) {
             if (!Board[posBelow].moving) {
                 Board[tilePos].moving = false;
+                tileToDrop.waitingForSwap = false;
                 tileToDrop.moving = null;
+                Board.ResolveMatches(tilePos, (-1, -1));
                 yield break;
             }
+            //otherwise, wait until it starts moving
+            if(tileToDrop.waitingForSwap)
+                yield return new WaitUntil(() => tileBelow.dropTween != null && tileBelow.dropTween.IsActive());
         }
+
+        tileToDrop.waitingForSwap = false;
         Vector3 initialPos = tileToDrop.GetInitialPos();
         
         //don't allow swapping into tile positions that we're dropping into, or moving tiles for that matter
@@ -191,14 +206,14 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
                 //swap if we can, given the direction of the swipe/drag
                 case Controls.Direction.Left:
                     swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Left);
-                    if(Board.CanSwap(tilePos, swapPos))
+                    if(CanSwapDisplay(tilePos, swapPos))
                         selectedTile.swapping = boardDisplay[swapPos].swapping = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Left));
                     else
                         selectedTile.Flash();
                     break;
                 case Controls.Direction.Right:
                     swapPos = Board.GetTile(tilePos, PuzlBoard.BoardDir.Right);
-                    if(Board.CanSwap(tilePos, swapPos))
+                    if(CanSwapDisplay(tilePos, swapPos))
                         selectedTile.swapping = boardDisplay[swapPos].swapping = StartCoroutine(HandleTileSwapping(tilePos, swapPos, PuzlBoard.BoardDir.Right));
                     else
                         selectedTile.Flash();
@@ -262,7 +277,12 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         return true;
     }
     #endregion
-
+    
+    /// <summary>
+    /// drops falling tiles until control is set to false at the rate of modifiable var DropDelay
+    /// </summary>
+    /// <param name="control"></param>
+    /// <returns></returns>
     public IEnumerator HandleFallingTiles(bool control)
     {
         while (control) {
@@ -271,11 +291,11 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
             yield return null;
         }
     }
-    public void DropFallingTiles()
+    void DropFallingTiles()
     {
         if(Board != null && Board.GetFallingTiles().Any()) {
             foreach (var tilePos in Board.GetFallingTiles()) {
-                //drop the tile if it isn't already
+                //drop the tile if it isn't already   
                 if (Board[tilePos].tileDrop == null && boardDisplay[tilePos].moving == null) {
                     boardDisplay[tilePos].moving = StartCoroutine(MoveDisplay(tilePos));
                 }
@@ -283,6 +303,24 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         }
     }
 
+    public bool CanSwapDisplay((int x, int y) tilePos, (int x, int y) swapPos)
+    {
+        //if we can't swap via board logic
+        if (!Board.CanSwap(tilePos, swapPos))
+            return false;
+        (int, int) posAbove = Board.GetTile(swapPos, PuzlBoard.BoardDir.Above);
+        if (posAbove == (-1, -1)) return true;
+        TileDisplay tileAboveSwap = boardDisplay[posAbove];
+        //if the tiles above are currently falling into the tiles we're swapping into
+        if (tileAboveSwap.dropTween is { active: true } || tileAboveSwap.moving != null)
+            return false;
+        return true;
+    }
+
+    private float GetSwapTimer()
+    {
+        return Board.DropDelay * 0.2f;
+    }
     public void UnsubscribeListeners()
     {
         Board.boardUpdate -= UpdateDisplay;
