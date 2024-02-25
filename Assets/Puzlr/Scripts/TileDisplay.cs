@@ -62,7 +62,7 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
         }
     }
 
-    public void SetDisplaySize(int displaySize)
+    public void SetDisplaySize(float displaySize)
     {
         RectTransform thisRect = (RectTransform)transform;
         thisRect.sizeDelta = new Vector2(displaySize, displaySize);

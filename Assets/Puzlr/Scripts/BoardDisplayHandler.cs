@@ -18,10 +18,10 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     public Coroutine HandleTilesCo;
     public Button dropButton;
     private bool canDrop;
-    public static int TileSize = 64;
+    public static float TileSize = 64;
     public List<Color> tileColors;
     #region Configuration
-    public static void SetTileSize(int size)
+    public static void SetTileSize(float size)
     {
         TileSize = size;
     }
@@ -40,11 +40,10 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         boardDisplay = new();
         
         //configure (use smallest) tile size based on screen size; use the smaller dimension for screen, larger dimension for board
-        int screenConstraint = (Screen.width <= Screen.height) ? Screen.width : Screen.height;
-        int boardConstraint = (Board.boardColumns >= Board.boardRows) ? Board.boardColumns : Board.boardRows;
-        
-        //subtract by a factor of 1 tile to make room for indicators
-        int combinedConstraint = (screenConstraint - (screenConstraint / boardConstraint)) / boardConstraint;
+        float screenConstraint = Screen.height;
+        float boardConstraint = Board.boardRows;
+        //height/rows, room for previews at the top
+        float combinedConstraint = (screenConstraint - (screenConstraint / boardConstraint)) / boardConstraint;
         SetTileSize(combinedConstraint);
         Debug.Log(screenConstraint +", "+ boardConstraint +" : "+TileSize);
         boardControlsScreen.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
@@ -52,6 +51,11 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         Vector2 rowSize = new Vector2(Board.boardColumns * TileSize, TileSize);
         ConfigureBoard(rowSize);
         ConfigurePreviews(rowSize);
+        
+        var boardTransform= boardContentRoot.transform;
+        boardTransform.position =
+            new Vector3(boardTransform.position.x, boardContentRoot.sizeDelta.y / 2f);
+        boardControlsScreen.transform.position = boardTransform.position;
     }
 
     void ConfigureBoard(Vector2 rowSize)
@@ -86,14 +90,13 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     {
         //create previewers
         Vector3 boardContentRootPos = boardContentRoot.transform.position;
-        RectTransform contentRootRect = (RectTransform)boardContentRoot;
         Vector3 previewerRowPos = new Vector3(boardContentRootPos.x,
-            boardContentRootPos.y + (0.5f * contentRootRect.rect.height) + (0.25f * TileSize), 0f);
+            Screen.height - (TileSize / 2f), 0f);
         GameObject previewerRowObj = Instantiate(gameRowPrefab, gameObject.transform);
         RectTransform previewerRect = (RectTransform)previewerRowObj.transform;
         previewerRect.anchorMin = new Vector2(0.5f, 0.5f);
         previewerRect.anchorMax = new Vector2(0.5f, 0.5f);
-        previewerRect.sizeDelta = new Vector2(rowSize.x, rowSize.y / 2);
+        previewerRect.sizeDelta = new Vector2(rowSize.x, rowSize.y);
         previewerRect.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
         previewerRowObj.transform.position = previewerRowPos;
 #if UNITY_EDITOR
@@ -262,21 +265,6 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         otherDisplay.swapping = null;
         yield return null;
     }
-    #endregion
-    #region Helpers
-    TileDisplay GetSelectedTile()
-    {
-        return boardDisplay.FirstOrDefault(x => x.Value.selected).Value;
-    }
-
-    public bool AllPreviewsCompleted()
-    {
-        foreach(TilePreview p in previewObjects)
-            if (p.previewerCo != null)
-                return false;
-        return true;
-    }
-    #endregion
     
     /// <summary>
     /// drops falling tiles until control is set to false at the rate of modifiable var DropDelay
@@ -302,6 +290,23 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
             }
         }
     }
+    
+    #endregion
+    #region Helpers
+    TileDisplay GetSelectedTile()
+    {
+        return boardDisplay.FirstOrDefault(x => x.Value.selected).Value;
+    }
+
+    public bool AllPreviewsCompleted()
+    {
+        foreach(TilePreview p in previewObjects)
+            if (p.previewerCo != null)
+                return false;
+        return true;
+    }
+    
+
 
     public bool CanSwapDisplay((int x, int y) tilePos, (int x, int y) swapPos)
     {
@@ -326,6 +331,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         Board.boardUpdate -= UpdateDisplay;
         Controls.OnDragEnded -= SwapTile;
     }
+    #endregion
     private void OnDisable()
     {
         UnsubscribeListeners();

@@ -16,15 +16,13 @@ public class TilePreview : MonoBehaviour, IPuzlGameComponent
         previewerCo = StartCoroutine(PreviewTileCo(previewTileColor));
     }
 
-    public void ConfigurePreviewerSize(int tileSize)
+    public void ConfigurePreviewerSize(float tileSize)
     {
         RectTransform objRect= (RectTransform)transform;
-        Vector2 size = new Vector2(tileSize, tileSize / 2f);
+        Vector2 size = new Vector2(tileSize, tileSize);
         objRect.sizeDelta = size;
-        float childDimension = (size.x <= size.y) ? size.x : size.y;
-        Vector2 childDimensions = new Vector2(childDimension, childDimension);
         foreach (Transform t in GetComponentsInChildren<Transform>())
-            ((RectTransform)t).sizeDelta = childDimensions;
+            ((RectTransform)t).sizeDelta = size;
     }
     private IEnumerator PreviewTileCo(Color previewTileColor)
     {

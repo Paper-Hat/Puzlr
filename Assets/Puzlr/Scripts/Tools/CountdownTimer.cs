@@ -10,6 +10,11 @@ public class CountdownTimer : MonoBehaviour
     //set a root if timer should disable the object upon completion
     [SerializeField] private GameObject objectRoot;
     private bool counting;
+
+    void SetupTimer()
+    {
+        
+    }
     public void StartTimer(float timeToWait)
     {
         if(objectRoot != null && !objectRoot.activeSelf)
