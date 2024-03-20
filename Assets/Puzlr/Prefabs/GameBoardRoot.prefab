@@ -34,10 +34,10 @@ RectTransform:
   m_Father: {fileID: 5973936831964314734}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 640, y: 768}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 320, y: 240}
+  m_SizeDelta: {x: 220, y: 480}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5973936831414691031
 CanvasRenderer:
@@ -60,14 +60,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.09910998, g: 0.6037736, b: 0.5808344, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 6a7a4decdaf8a0047a978ce2764eb284, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -207,6 +207,9 @@ GameObject:
   - component: {fileID: 7366200752225127027}
   - component: {fileID: 7811464192635909571}
   - component: {fileID: 5973936831964314723}
+  - component: {fileID: 5256253825933622519}
+  - component: {fileID: 768622981}
+  - component: {fileID: 768622980}
   m_Layer: 0
   m_Name: GameBoardRoot
   m_TagString: Untagged
@@ -273,7 +276,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -313,16 +316,18 @@ MonoBehaviour:
   ScoreDisplay: {fileID: 0}
   GameStartDelay: 3
   gameStartTimer: {fileID: 0}
-  xDimensions: 12
-  yDimensions: 7
+  xDimensions: 13
+  yDimensions: 9
   distinctTiles: 5
   defaultRowFillCount: 7
   MatchRequirement: 3
-  maxSpeed: 0
-  startSpeed: 0
-  speedFactor: 0
-  matchesUntilSpeedup: 0
-  testGameType: 2
+  speedUpButton: {fileID: 0}
+  maxSpeed: 0.5
+  startSpeed: 3
+  speedFactor: 30
+  matchesUntilSpeedup: 10
+  dropButton: {fileID: 0}
+  testGameType: 1
   tester: 1
   currentSpeed: 0
 --- !u!114 &5973936831964314723
@@ -343,7 +348,6 @@ MonoBehaviour:
   gameRowPrefab: {fileID: 4149144881279620957, guid: 5e7be17ef928aa041b7d6c4a539f5bb9, type: 3}
   tilePrefab: {fileID: 3576677210228161632, guid: 8d89bc33df85b624087276315ae98158, type: 3}
   previewerPrefab: {fileID: 3576677210228161632, guid: c9d7a87cbd1df8d4e91b826763112356, type: 3}
-  dropButton: {fileID: 0}
   tileColors:
   - {r: 0, g: 0, b: 0, a: 0}
   - {r: 0.3764706, g: 0.80784315, b: 0.89411765, a: 1}
@@ -353,3 +357,71 @@ MonoBehaviour:
   - {r: 0.8509804, g: 0.6313726, b: 0.4, a: 1}
   - {r: 0.5176471, g: 0.5137255, b: 0.9882353, a: 1}
   - {r: 0.2784314, g: 0.84705883, b: 0.6117647, a: 1}
+--- !u!114 &5256253825933622519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973936831964314722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.09803922, g: 0.5294118, b: 0.50980395, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 6a7a4decdaf8a0047a978ce2764eb284, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &768622981
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973936831964314722}
+  m_CullTransparentMesh: 1
+--- !u!114 &768622980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973936831964314722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.09803922, g: 0.5294118, b: 0.50980395, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 6a7a4decdaf8a0047a978ce2764eb284, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1

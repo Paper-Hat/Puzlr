@@ -16,9 +16,9 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject previewerPrefab;
     public Coroutine HandleTilesCo;
-    public Button dropButton;
     private bool canDrop;
     public static float TileSize = 64;
+    public static Vector3 BoardOffset;
     public List<Color> tileColors;
     #region Configuration
     public static void SetTileSize(float size)
@@ -50,12 +50,10 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         boardContentRoot.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         Vector2 rowSize = new Vector2(Board.boardColumns * TileSize, TileSize);
         ConfigureBoard(rowSize);
-        ConfigurePreviews(rowSize);
-        
         var boardTransform= boardContentRoot.transform;
-        boardTransform.position =
-            new Vector3(boardTransform.position.x, boardContentRoot.sizeDelta.y / 2f);
+        boardTransform.position = new Vector3((boardContentRoot.sizeDelta.x / 2f) + (Screen.width / (Board.boardColumns / 2f)), boardContentRoot.sizeDelta.y / 2f);
         boardControlsScreen.transform.position = boardTransform.position;
+        ConfigurePreviews(rowSize);
     }
 
     void ConfigureBoard(Vector2 rowSize)

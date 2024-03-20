@@ -5,7 +5,6 @@ using UnityEngine;
 using System.Linq;
 using Random = UnityEngine.Random;
 
-//TODO: Configure game based on GameBoardRoot Canvas
 //TODO: Settings Menu
 
 

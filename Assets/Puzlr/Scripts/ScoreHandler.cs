@@ -48,6 +48,8 @@ public class ScoreHandler : IPuzlGameComponent
     public void ResetScore()
     {
         playerScore = 0;
+        numTotalMatches = 0;
+        numMatchedTiles = 0;
         scoreUpdated?.Invoke();
     }
     
@@ -92,7 +94,7 @@ public class ScoreHandler : IPuzlGameComponent
 
     public int GetTotalTilesMatched()
     {
-        return numTotalMatches;
+        return numMatchedTiles;
     }
 
     public void UnsubscribeListeners()

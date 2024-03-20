@@ -5,7 +5,9 @@ using UnityEngine;
 
 public class ScoreDisplay : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI playerScoreText;
+    [SerializeField] private TextMeshProUGUI playerTotalScore;
+    [SerializeField] private TextMeshProUGUI playerNumMatches;
+    [SerializeField] private TextMeshProUGUI playerNumTotalMatchedTiles;
     private ScoreHandler score;
     private void Awake()
     {
@@ -29,7 +31,9 @@ public class ScoreDisplay : MonoBehaviour
     }
     void UpdatePlayerScoreText()
     {
-        playerScoreText.text = ""+score.Score;
+        playerTotalScore.text = score.Score.ToString();
+        playerNumMatches.text = score.GetTotalMatches().ToString();
+        playerNumTotalMatchedTiles.text = score.GetTotalTilesMatched().ToString();
     }
 
     private void OnDisable()
