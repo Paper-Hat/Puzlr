@@ -38,6 +38,7 @@ public class ScoreDisplay : MonoBehaviour
 
     private void OnDisable()
     {
-        score.scoreUpdated -= UpdatePlayerScoreText;
+        if(score != null)
+            score.scoreUpdated -= UpdatePlayerScoreText;
     }
 }

@@ -6,7 +6,7 @@ using System.Linq;
 using Random = UnityEngine.Random;
 
 //TODO: Settings Menu
-
+//TODO: Pause Menu
 
 public class PuzlBoard
 {
@@ -98,7 +98,7 @@ public class PuzlBoard
     {
         if(!force)
         {
-            Debug.Log("Succeeded in swapping.");
+            //Debug.Log("Succeeded in swapping.");
             //Swap tiles via deconstruction
             (board[a].tileValue, board[b].tileValue) = (board[b].tileValue, board[a].tileValue);
             List<(int, int)> swappedTiles = new List<(int, int)> { a, b };

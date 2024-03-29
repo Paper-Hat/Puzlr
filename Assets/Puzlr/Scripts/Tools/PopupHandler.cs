@@ -39,6 +39,10 @@ public class PopupHandler : MonoBehaviour
         display.Popup();
     }
 
+    public bool PopupActive()
+    {
+        return display.Active();
+    }
     private void ClearOnTransition(Scene arg0, LoadSceneMode loadSceneMode)
     {
         ClearPopups();

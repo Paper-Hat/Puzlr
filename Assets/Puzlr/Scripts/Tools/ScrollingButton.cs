@@ -8,6 +8,9 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UI.Button;
 using DG.Tweening;
+using TMPro;
+using Unity.Collections;
+
 /// <summary>
 /// Fixed scrolling for a set of button-activated functions
 /// </summary>
@@ -36,7 +39,7 @@ public class ScrollingButton : MonoBehaviour
     [SerializeField] private int numActiveButtons = 1;
     [Header("What the button(s) do:")]
     //We will always start with our active buttons in the "center" of the array
-    [SerializeField] private List<UnityEvent> buttonFunctions;
+    [SerializeField] private ButtonParams[] buttonFunctions;
 
     [Header("Optional fields")] 
     //Control buttons are just that; they should be enabled when we can scroll, and disabled when we can't
@@ -51,7 +54,7 @@ public class ScrollingButton : MonoBehaviour
     [SerializeField] private Scroll dir = Scroll.Right;
     [SerializeField] private float scrollSpeed;
     
-    private Button[] scrollingBtns;
+    [SerializeField][ReadOnly] private Button[] scrollingBtns;
     private bool shouldScroll;
     private float zeroX, zeroY, firstX, firstY, lastX, lastY;
     private Vector3 offset;
@@ -59,26 +62,24 @@ public class ScrollingButton : MonoBehaviour
     private RectTransform maskTransform;
     void Awake()
     {
-        scrollingBtns = new Button[numActiveButtons + 1];
         if (transform.position != Vector3.zero) offset = transform.position;
-        if (numActiveButtons >= buttonFunctions.Count || buttonPrefab == null) {
-            //Debug.Log("Disabling scroll functionality due to error in config.");
-            //return;
+        if (numActiveButtons >= buttonFunctions.Length - 1 || buttonPrefab == null) {
+            Debug.LogError("Disabling scroll functionality due to error in config.");
+            shouldScroll = false;
         }
-
-        shouldScroll = true;
-        ConfigureMask();
-        CreateButtons();
+        
     }
     private void Start()
     {
-        
+        shouldScroll = true;
+        ConfigureMask();
+        CreateButtons();
     }
 
     private void FixedUpdate()
     {
         //scroll on positive axes
-        if (!scrollWithScrollWheel || !shouldScroll) return;
+        //if (!scrollWithScrollWheel || !shouldScroll) return;
         
     }
 
@@ -101,6 +102,7 @@ public class ScrollingButton : MonoBehaviour
     
     void CreateButtons()
     {
+        scrollingBtns = new Button[numActiveButtons + 1];
         //assuming our button prefab rects are center-aligned
         //our starting pos is the center of our furthest element in the negative direction
         bool horizontal = dir is Scroll.Left or Scroll.Right;
@@ -109,7 +111,7 @@ public class ScrollingButton : MonoBehaviour
         firstY = (horizontal) ? 0f : maskTransform.rect.yMin + 0.5f * buttonDelta.y;
         zeroX = (horizontal) ? firstX - buttonDelta.x : 0f;
         zeroY = (horizontal) ? 0f : firstY - buttonDelta.y;
-        Debug.Log(new Vector3(zeroX, zeroY));
+        //Debug.Log(new Vector3(zeroX, zeroY));
         
         for (int i = 0; i < scrollingBtns.Length; ++i)
         {
@@ -122,6 +124,10 @@ public class ScrollingButton : MonoBehaviour
 
         lastX = (horizontal) ? scrollingBtns[^1].gameObject.transform.localPosition.x: 0f;
         lastY = (horizontal) ? 0f : scrollingBtns[^1].gameObject.transform.localPosition.y;
+        
+        for (int i = 0; i < numActiveButtons; ++i) {
+            SetupButton(scrollingBtns[i], buttonFunctions[i]);
+        }
     }
     
     //tween button in the direction provided, set new button position
@@ -141,6 +147,7 @@ public class ScrollingButton : MonoBehaviour
         //ensure 'caps' are enabled regardless of scroll
         scrollingBtns[0].gameObject.SetActive(true);
         scrollingBtns[^1].gameObject.SetActive(true);
+        
         switch (direction)
         {
             case Scroll.Up:
@@ -148,13 +155,18 @@ public class ScrollingButton : MonoBehaviour
             case Scroll.Down:
                 break;
             case Scroll.Left:
-                Debug.Log("Scrolling left...");
+                //Debug.Log("Scrolling left...");
                 foreach (var btn in scrollingBtns) {
                     var btnTransform = btn.gameObject.transform;
                     btnTransform.DOLocalMoveX(btnTransform.localPosition.x - buttonDelta.x, scrollSpeed, true);
                 }
+                Shift<Button>(true, scrollingBtns);
+                Shift<ButtonParams>(true, buttonFunctions);
+                for (int i = 0; i < numActiveButtons; ++i) {
+                    SetupButton(scrollingBtns[i], buttonFunctions[i]);
+                }
                 yield return new WaitForSeconds(scrollSpeed);
-                scrollingBtns[0].gameObject.transform.localPosition = new Vector3(lastX, lastY);
+                scrollingBtns[^1].gameObject.transform.localPosition = new Vector3(lastX, lastY);
                 
                 break;
             case Scroll.Right:
@@ -164,31 +176,35 @@ public class ScrollingButton : MonoBehaviour
                     var btnTransform = btn.gameObject.transform;
                     btnTransform.DOLocalMoveX(btnTransform.localPosition.x + buttonDelta.x, scrollSpeed, true);
                 }
+                Shift<Button>(false, scrollingBtns);
+                Shift<ButtonParams>(false, buttonFunctions);
+                for (int i = 0; i < numActiveButtons; ++i) {
+                    SetupButton(scrollingBtns[i], buttonFunctions[i]);
+                }
                 yield return new WaitForSeconds(scrollSpeed);
                 
                 break;
         }
-
         
-        //configure "cap" buttons based on whether objects are coming into or leaving view
-        Shift(dir is Scroll.Down or Scroll.Left, scrollingBtns);
         scrollingBtns[0].gameObject.SetActive(true);
         scrollingBtns[^1].gameObject.SetActive(false);
         
        ToggleInteraction();
-        yield return null;
+       yield return null;
     }
     
-    void SetupButton(Button btn, UnityEvent btnFunc)
+    void SetupButton(Button btn, ButtonParams p)
     {
+        //inefficient, but we're just trying to finish the game at this point
+        btn.GetComponentInChildren<TextMeshProUGUI>().text = p.btnName;
         btn.onClick.RemoveAllListeners();
-        btn.onClick.AddListener(() => btnFunc?.Invoke());
+        btn.onClick.AddListener(() => p.btnFn.Invoke());
     }
     
     #region Helpers
-    Scroll GetOppositeDirection(Scroll dir)
+    Scroll GetOppositeDirection(Scroll direction)
     {
-        switch (dir)
+        switch (direction)
         {
             case Scroll.Up:
                 return Scroll.Down;
@@ -212,9 +228,9 @@ public class ScrollingButton : MonoBehaviour
     /// <param name="left"></param>
     /// <param name="arr"></param>
     /// <param name="numShifts"></param>
-    void Shift(bool left, Button[] arr, int numShifts = 1)
+    void Shift<T>(bool left, T[] arr, int numShifts = 1)
     {
-        Button[] wrapped = new Button[numShifts];
+        T[] wrapped = new T[numShifts];
         
         if (left) {
             //objects that get shifted out temporarily referenced in wrapped arr
@@ -243,5 +259,22 @@ public class ScrollingButton : MonoBehaviour
     
     #endregion
 
+    void OnDisable()
+    {
+        foreach (Button b in scrollingBtns) {
+            b.interactable = true;
+            b.onClick.RemoveAllListeners();
+            shouldScroll = true;
+        }
+        foreach (Button b in controlButtons) { b.interactable = true; }
 
+        DOTween.Clear();
+
+    }
+}
+[Serializable]
+class ButtonParams
+{
+    public UnityEvent btnFn;
+    public string btnName;
 }

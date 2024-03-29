@@ -6,11 +6,17 @@ using UnityEngine.UI;
 [CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/PopupInfoSO", order = 1)]
 public class PopupInfo : ScriptableObject
 {
+    public enum PopupSize
+    {
+        Small,
+        Medium,
+        Large
+    }
     public string headerText;
     public string bodyText;
     public List<ButtonInfo> btnInfo;
     public List<Image> gameUnlocks;
-
+    public PopupSize height = PopupSize.Medium;
     public override string ToString()
     {
         string buttons = "Buttons: ";

@@ -19,6 +19,10 @@ public class PopupDisplay : MonoBehaviour
     //we'll reuse the same popup object instead of creating duplicates
     //will also just turn off the object instead of deleting/instantiating it
     [SerializeField] private GameObject popupRoot;
+    [Header("Default Popup Sizes (Height)")]
+    [SerializeField] private float smallSize = 400f;
+    [SerializeField] private float mediumSize = 650f;
+    [SerializeField] private float largeSize = 900f;
     private void Awake()
     {
         DontDestroyOnLoad(this);
@@ -29,6 +33,10 @@ public class PopupDisplay : MonoBehaviour
         displayButtons = GetComponentsInChildren<Button>(true);
     }
 
+    public bool PopupOnDisplay()
+    {
+        return popupRoot.activeSelf;
+    }
     public void Popup()
     {
         SetPopupInfo(PopupHandler._instance.PopupsToDisplay.Dequeue());
@@ -46,6 +54,27 @@ public class PopupDisplay : MonoBehaviour
         bodyText.text = info.bodyText;
         buttonInfo = info.btnInfo;
         unlocks = info.gameUnlocks;
+        ConfigureRoot(info.height);
+    }
+
+    void ConfigureRoot(PopupInfo.PopupSize height)
+    {
+        RectTransform rtf = (RectTransform)popupRoot.transform;
+        switch (height)
+        {
+            case PopupInfo.PopupSize.Small:
+                rtf.sizeDelta = new Vector2(rtf.sizeDelta.x, smallSize);
+                break;
+            case PopupInfo.PopupSize.Medium:
+                rtf.sizeDelta = new Vector2(rtf.sizeDelta.x, mediumSize);
+                break;
+            case PopupInfo.PopupSize.Large:
+                rtf.sizeDelta = new Vector2(rtf.sizeDelta.x, largeSize);
+                break;
+            default:
+                rtf.sizeDelta = new Vector2(rtf.sizeDelta.x, mediumSize);
+                break;
+        }
     }
     #region Button_Config
     void ConfigureButtons()
@@ -67,15 +96,17 @@ public class PopupDisplay : MonoBehaviour
             int iterVal = i;
             SetButtonText(displayButtons[i], buttonInfo[i].buttonText);
             displayButtons[i].gameObject.SetActive(true);
-            displayButtons[i].onClick.AddListener(()=>LoadSceneFromButton(buttonInfo[iterVal]));
-            
+            if (string.IsNullOrEmpty(buttonInfo[i].sceneToLoad)) {
+                displayButtons[i].onClick.AddListener(ClosePopup);
+                displayButtons[i].onClick.AddListener(ApplicationHandler._instance.TogglePause);
+            }
+            else
+            {
+                displayButtons[i].onClick.AddListener(()=>ApplicationHandler.LoadScene(buttonInfo[iterVal].sceneToLoad));
+            }
         }
     }
-
-    void LoadSceneFromButton(ButtonInfo bi)
-    {
-        ApplicationHandler.LoadScene(bi.sceneToLoad);
-    }
+    
     void SetButtonText(Button b, string text)
     {
         TextMeshProUGUI buttonText = b.GetComponentInChildren<TextMeshProUGUI>();

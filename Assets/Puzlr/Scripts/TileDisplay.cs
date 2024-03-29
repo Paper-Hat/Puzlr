@@ -119,7 +119,7 @@ public class TileDisplay : MonoBehaviour, IPuzlGameComponent
         var indicatorRot = swapIndicator.gameObject.transform.parent;
         while (Controls.Dragging)
         {
-            Debug.Log(Controls.DragDirection);
+            //Debug.Log(Controls.DragDirection);
             //while dragging, set the rotation of the arrow based on the direction of the drag
             switch (Controls.DragDirection)
             {

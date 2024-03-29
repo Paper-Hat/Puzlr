@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     [SerializeField] private GameObject gameRowPrefab;
     [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject previewerPrefab;
+    [SerializeField] private GameObject gameUIObj;
     public Coroutine HandleTilesCo;
     private bool canDrop;
     public static float TileSize = 64;
@@ -45,13 +47,16 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
         //height/rows, room for previews at the top
         float combinedConstraint = (screenConstraint - (screenConstraint / boardConstraint)) / boardConstraint;
         SetTileSize(combinedConstraint);
-        Debug.Log(screenConstraint +", "+ boardConstraint +" : "+TileSize);
+        //Debug.Log(screenConstraint +", "+ boardConstraint +" : "+TileSize);
         boardControlsScreen.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         boardContentRoot.sizeDelta = new Vector2(Board.boardColumns * TileSize, Board.boardRows * TileSize);
         Vector2 rowSize = new Vector2(Board.boardColumns * TileSize, TileSize);
         ConfigureBoard(rowSize);
+        //position/offset
         var boardTransform= boardContentRoot.transform;
-        boardTransform.position = new Vector3((boardContentRoot.sizeDelta.x / 2f) + (Screen.width / (Board.boardColumns / 2f)), boardContentRoot.sizeDelta.y / 2f);
+        RectTransform uiRTF = (RectTransform)gameUIObj.transform;
+        float uiOffset = uiRTF.sizeDelta.x * uiRTF.parent.transform.localScale.x * 0.5f;
+        boardTransform.position = new Vector3((boardContentRoot.sizeDelta.x / 2f) + (Screen.width / (Board.boardColumns / 2f) - uiOffset), boardContentRoot.sizeDelta.y / 2f);
         boardControlsScreen.transform.position = boardTransform.position;
         ConfigurePreviews(rowSize);
     }
@@ -326,7 +331,8 @@ public class BoardDisplayHandler : MonoBehaviour, IPuzlGameComponent
     }
     public void UnsubscribeListeners()
     {
-        Board.boardUpdate -= UpdateDisplay;
+        if(Board != null)
+            Board.boardUpdate -= UpdateDisplay;
         Controls.OnDragEnded -= SwapTile;
     }
     #endregion

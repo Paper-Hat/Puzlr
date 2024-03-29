@@ -10,14 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2578b9c124d79f54abe9609052b3211a, type: 3}
-  m_Name: GameOver
+  m_Name: Pause
   m_EditorClassIdentifier: 
-  headerText: Game Over
-  bodyText: 
+  headerText: Pause
+  bodyText: Game Paused
   btnInfo:
-  - buttonText: Main Menu
-    sceneToLoad: Title
+  - buttonText: Resume
+    sceneToLoad: 
   - buttonText: Restart
     sceneToLoad: GameScene
+  - buttonText: Main Menu
+    sceneToLoad: Title
   gameUnlocks: []
   height: 1
